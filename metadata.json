@@ -1,0 +1,6 @@
+{
+  "name": "NEW DANCE SYSTEM",
+  "description": "Sistema local para la gestión de inscripciones, horarios, pagos y asitencia en una academia de baile con diseño elegante en dorado, negro y blanco.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

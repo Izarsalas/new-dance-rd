@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  
+  /* Dorado de lujo (Aura Gold) */
+  --color-gold-50: #fefdf3;
+  --color-gold-100: #faf6cf;
+  --color-gold-200: #f4ec9f;
+  --color-gold-300: #ead863;
+  --color-gold-400: #dfbf34;
+  --color-gold-500: #d4af37; /* Metallic gold standard */
+  --color-gold-600: #b48e28;
+  --color-gold-700: #8e6c1e;
+  --color-gold-850: antiquewhite;
+  --color-gold-900: #624b17;
+  --color-gold-950: #3c2d0c;
+
+  /* Custom intermediate color layers used in code to ensure high typography contrast & no fallbacks */
+  --color-zinc-350: #e4e4e7; /* rich light grayish white */
+  --color-zinc-450: #ececf1; /* standard readable premium bright zinc */
+  --color-zinc-455: #cbd5e1; /* standard light slate */
+  --color-zinc-550: #a1a1aa; /* readable secondary zinc outline */
+  --color-zinc-650: #f4f4f5; /* readable text fallback instead of dark gray */
+  --color-zinc-750: #27272a; /* valid zinc border/background */
+  --color-zinc-805: #18181b; /* valid zinc border bg */
+  --color-zinc-855: #27272a; /* valid border dark line */
+  
+  --color-stone-150: #ffffff; /* clean white color */
+  --color-stone-250: #ffffff; /* clean white fallback instead of dark text */
+  
+  --color-emerald-450: #34d399; /* standard green */
+  --color-emerald-455: #10b981; /* valid emerald */
+  --color-emerald-555: #10b981; /* valid success emerald */
+  
+  --color-rose-455: #ef4444; /* vivid danger rose */
+  --color-rose-505: #f43f5e; /* readable high contrast alert pinkish red */
+  
+  --color-gold-550: #d4af37; /* golden accent fallback */
+}
+
+/* Custom gorgeous scrollbar for dance studio feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b48e28;
+}
+
+/* Pulse glow effect for golden buttons or badges */
+.gold-glow {
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+}
+
+.gold-glow-intense {
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.35);
+}
+
+/* Standard animation utility */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Force calendar picker indicator icons to be white */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5);
+  cursor: pointer;
+}
+
+/* Global browser fallbacks to guarantee absolute legibility under high-fidelity theme */
+input, select, textarea, button, p, table, th, td, label {
+  color-scheme: dark; /* Signals standard browser element engines to render dark mode widgets */
+}
+
+/* Fallback default colors for custom native select wrappers */
+select option {
+  background-color: #0c0c0e !important;
+  color: #ffffff !important;
+}
+
+/* Ensure placeholder texts are bright enough for eyes */
+::placeholder {
+  color: #71717a !important; /* zinc-500 standard fallback */
+  opacity: 0.8;
+}
+
