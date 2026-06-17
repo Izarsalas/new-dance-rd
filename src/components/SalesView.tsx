@@ -799,105 +799,163 @@ export default function SalesView({
           <div className="relative w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl gold-glow-intense my-4 md:my-8 max-h-[92vh] flex flex-col items-center">
             
             {/* TICKET WRAPPER (STANDARDIZED THERMAL TYPE LAYOUT FOR BROWSER PRINT) */}
-            <div className="w-full bg-white text-zinc-950 p-5 rounded-lg font-mono text-xs shadow-inner space-y-4 printable-section overflow-y-auto flex-1">
+            <div className={`w-full bg-white text-zinc-950 p-5 rounded-lg shadow-inner flex-1 overflow-y-auto printable-section space-y-4
+              ${(() => {
+                switch (settings.fuenteFamilia) {
+                  case 'sans': return 'font-sans';
+                  case 'mono': return 'font-mono';
+                  case 'serif': return 'font-serif';
+                  case 'courier': return 'font-[Courier_New,Courier,monospace]';
+                  case 'grotesk':
+                  default: return 'font-[Space_Grotesk,sans-serif] tracking-tight';
+                }
+              })()}
+            `}>
               
-              {/* BRAND HEADER */}
-              <div className="text-center space-y-1">
-                <h4 className="font-sans font-black text-sm uppercase tracking-tight">{settings.nombreAcademia || 'NEW DANCE SYSTEM'}</h4>
-                {settings.rnc && <p className="text-[10px] text-zinc-650">RNC: {settings.rnc}</p>}
-                {settings.direccion && <p className="text-[10px] text-zinc-600 leading-tight">{settings.direccion}</p>}
-                {settings.telefono && <p className="text-[10px] text-zinc-650">Tel: {settings.telefono}</p>}
-                <div className="border-b border-dashed border-zinc-400 w-full pt-1" />
-              </div>
-
-              {/* TICKET METADATA */}
-              <div className="space-y-1 text-[10px] text-zinc-700">
-                <div className="flex justify-between">
-                  <span>OPERACIÓN:</span>
-                  <span className="font-bold">{completedSale.estado === 'Cotización' ? 'COTIZACIÓN' : 'VENTA DIRECTA'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>DOCUMENTO:</span>
-                  <span className="font-bold">{completedSale.codigo}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>FECHA:</span>
-                  <span>{completedSale.fecha}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>CLIENTE:</span>
-                  <span className="max-w-[150px] truncate font-bold uppercase">{completedSale.clienteNombre || 'Consumidor Final'}</span>
-                </div>
-                <div className="border-b border-dashed border-zinc-400 w-full pt-1" />
-              </div>
-
-              {/* PRODUCTS COLUMNS */}
-              <div className="space-y-2">
-                <div className="text-[9px] font-bold text-zinc-600 grid grid-cols-12">
-                  <span className="col-span-6 text-left">ARTÍCULO</span>
-                  <span className="col-span-2 text-center">CANT.</span>
-                  <span className="col-span-4 text-right">TOTAL (RD$)</span>
-                </div>
-                <div className="border-b border-zinc-200" />
+              <div className={`space-y-4 ${settings.mostrarBordes ? 'border border-dashed border-zinc-400 rounded-xl p-3' : ''}`}>
                 
-                <div className="space-y-1.5">
-                  {completedSale.items.map((it, index) => (
-                    <div key={index} className="grid grid-cols-12 text-[10px]">
-                      <span className="col-span-6 text-left block truncate uppercase">{it.productoNombre}</span>
-                      <span className="col-span-2 text-center text-zinc-600 block">{it.cantidad}</span>
-                      <span className="col-span-4 text-right font-bold block">{(it.precio * it.cantidad).toLocaleString('es-DO')}</span>
+                {/* BRAND HEADER */}
+                <div className={`${settings.alineacionTexto || 'text-center'} space-y-1`}>
+                  {settings.mostrarLogo && settings.logoUrl && (
+                    <div className="flex justify-center mb-2">
+                      <img 
+                        src={settings.logoUrl} 
+                        alt="Logo Academia" 
+                        className="max-h-16 max-w-[140px] object-contain rounded p-1 bg-white border border-zinc-200/50 shadow-sm"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
-                  ))}
-                </div>
-                <div className="border-b border-dashed border-zinc-400 w-full pt-1" />
-              </div>
-
-              {/* MATHEMATICAL BALANCE */}
-              <div className="text-[11px] space-y-1 pl-12 text-zinc-900">
-                <div className="flex justify-between">
-                  <span>SUBTOTAL:</span>
-                  <span>RD$ {completedSale.subtotal.toLocaleString('es-DO')}</span>
-                </div>
-                <div className="flex justify-between text-[10px] text-zinc-600">
-                  <span>ITBIS (18%):</span>
-                  <span>RD$ {completedSale.itbis.toLocaleString('es-DO')}</span>
-                </div>
-                <div className="flex justify-between font-bold border-t border-zinc-350 pt-1 text-sm text-zinc-950">
-                  <span>TOTAL:</span>
-                  <span>RD$ {completedSale.total.toLocaleString('es-DO')}</span>
-                </div>
-
-                {completedSale.estado !== 'Cotización' && (
-                  <div className="space-y-1 border-t border-dashed border-zinc-300 pt-1 text-[10px] text-zinc-600">
-                    <div className="flex justify-between">
-                      <span>MÉTODO:</span>
-                      <span>{completedSale.metodoPago}</span>
-                    </div>
-                    {completedSale.pagadoCon !== undefined && (
-                      <div className="flex justify-between">
-                        <span>RECIBIDO:</span>
-                        <span>RD$ {completedSale.pagadoCon.toLocaleString('es-DO')}</span>
-                      </div>
-                    )}
-                    {completedSale.cambio !== undefined && (
-                      <div className="flex justify-between font-bold text-zinc-900">
-                        <span>SU CAMBIO:</span>
-                        <span>RD$ {completedSale.cambio.toLocaleString('es-DO')}</span>
-                      </div>
+                  )}
+                  <h4 className={`font-black uppercase tracking-tight leading-tight ${settings.tamanoLetraTitulo || 'text-sm'}`}>
+                    {settings.nombreAcademia || 'NEW DANCE SYSTEM'}
+                  </h4>
+                  {settings.mostrarRNC !== false && settings.rnc && (
+                    <p className="text-[10px] opacity-90 font-mono">RNC: {settings.rnc}</p>
+                  )}
+                  {settings.mostrarDireccion !== false && settings.direccion && (
+                    <p className="text-[9px] leading-tight opacity-80">{settings.direccion}</p>
+                  )}
+                  {settings.mostrarTelefono !== false && settings.telefono && (
+                    <p className="text-[9px] opacity-85 font-mono">Tel: {settings.telefono}</p>
+                  )}
+                  
+                  <div className="pt-1">
+                    {settings.mostrarSeparadorDoble ? (
+                      <div className="border-t-2 border-double border-zinc-300 w-full" />
+                    ) : (
+                      <div className="border-b border-dashed border-zinc-400 w-full" />
                     )}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* BOTTOM SLOGAN */}
-              <div className="text-center pt-2 space-y-1.5">
-                <div className="border-b border-dashed border-zinc-400 w-full" />
-                <p className="text-[9px] text-zinc-600 leading-tight uppercase">
-                  {settings.mensajeLargo || '¡Gracias por apoyar el arte y la danza en NEW DANCE SYSTEM!'}
-                </p>
-                <p className="text-[8px] text-zinc-400 font-sans tracking-widest mt-1">SISTEMA NEW DANCE SYSTEM POS - COMPILADO OK</p>
-              </div>
+                {/* TICKET METADATA */}
+                <div className={`space-y-1 ${settings.tamanoLetraCuerpo || 'text-[10px]'} opacity-90`}>
+                  <div className="flex justify-between font-mono">
+                    <span>OPERACIÓN:</span>
+                    <span className="font-bold">{completedSale.estado === 'Cotización' ? 'COTIZACIÓN' : 'VENTA DIRECTA'}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span>DOCUMENTO:</span>
+                    <span className="font-bold">{completedSale.codigo}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span>FECHA:</span>
+                    <span>{completedSale.fecha}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span>CLIENTE:</span>
+                    <span className="max-w-[150px] truncate font-bold uppercase">{completedSale.clienteNombre || 'Consumidor Final'}</span>
+                  </div>
+                  
+                  <div className="pt-1">
+                    {settings.mostrarSeparadorDoble ? (
+                      <div className="border-t-2 border-double border-zinc-300 w-full" />
+                    ) : (
+                      <div className="border-b border-dashed border-zinc-400 w-full" />
+                    )}
+                  </div>
+                </div>
 
+                {/* PRODUCTS COLUMNS */}
+                <div className="space-y-2">
+                  <div className={`font-bold text-zinc-700 grid grid-cols-12 ${settings.tamanoLetraFooter || 'text-[9px]'}`}>
+                    <span className="col-span-6 text-left">ARTÍCULO</span>
+                    <span className="col-span-2 text-center">CANT.</span>
+                    <span className="col-span-4 text-right">TOTAL (RD$)</span>
+                  </div>
+                  <div className="border-b border-zinc-200" />
+                  
+                  <div className={`space-y-1.5 ${settings.tamanoLetraCuerpo || 'text-[10px]'}`}>
+                    {completedSale.items.map((it, index) => (
+                      <div key={index} className="grid grid-cols-12">
+                        <span className="col-span-6 text-left block truncate uppercase">{it.productoNombre}</span>
+                        <span className="col-span-2 text-center text-zinc-600 block">{it.cantidad}</span>
+                        <span className="col-span-4 text-right font-bold block">{(it.precio * it.cantidad).toLocaleString('es-DO')}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-1">
+                    {settings.mostrarSeparadorDoble ? (
+                      <div className="border-t-2 border-double border-zinc-300 w-full" />
+                    ) : (
+                      <div className="border-b border-dashed border-zinc-400 w-full" />
+                    )}
+                  </div>
+                </div>
+
+                {/* MATHEMATICAL BALANCE */}
+                <div className={`space-y-1 pl-8 text-zinc-900 ${settings.tamanoLetraCuerpo || 'text-xs'}`}>
+                  <div className="flex justify-between">
+                    <span>SUBTOTAL:</span>
+                    <span className="font-mono">RD$ {completedSale.subtotal.toLocaleString('es-DO')}</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-600 text-[10px]">
+                    <span>ITBIS (18%):</span>
+                    <span className="font-mono">RD$ {completedSale.itbis.toLocaleString('es-DO')}</span>
+                  </div>
+                  <div className="flex justify-between font-black border-t border-zinc-350 pt-1.5 text-zinc-950">
+                    <span>TOTAL:</span>
+                    <span className="font-mono">RD$ {completedSale.total.toLocaleString('es-DO')}</span>
+                  </div>
+
+                  {completedSale.estado !== 'Cotización' && (
+                    <div className="space-y-1 border-t border-dashed border-zinc-300 pt-1 text-[10px] text-zinc-600 font-mono">
+                      <div className="flex justify-between">
+                        <span>MÉTODO:</span>
+                        <span>{completedSale.metodoPago}</span>
+                      </div>
+                      {completedSale.pagadoCon !== undefined && (
+                        <div className="flex justify-between font-mono">
+                          <span>RECIBIDO:</span>
+                          <span>RD$ {completedSale.pagadoCon.toLocaleString('es-DO')}</span>
+                        </div>
+                      )}
+                      {completedSale.cambio !== undefined && (
+                        <div className="flex justify-between font-bold text-zinc-900 font-mono">
+                          <span>SU CAMBIO:</span>
+                          <span>RD$ {completedSale.cambio.toLocaleString('es-DO')}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* BOTTOM SLOGAN */}
+                <div className={`pt-2 space-y-1.5 ${settings.alineacionTexto || 'text-center'}`}>
+                  {settings.mostrarSeparadorDoble ? (
+                    <div className="border-t-2 border-double border-zinc-300 w-full" />
+                  ) : (
+                    <div className="border-b border-dashed border-zinc-400 w-full" />
+                  )}
+                  
+                  <p className={`text-zinc-700 leading-tight uppercase font-medium ${settings.tamanoLetraFooter || 'text-[9px]'}`}>
+                    {settings.mensajeLargo || '¡Gracias por apoyar el arte y la danza en NEW DANCE SYSTEM!'}
+                  </p>
+                  <p className="text-[8px] text-zinc-400 font-sans tracking-widest mt-1 uppercase">SISTEMA NEW DANCE SYSTEM POS - COMPILADO OK</p>
+                </div>
+
+              </div>
             </div>
 
             {/* BUTTON CONTROLS */}

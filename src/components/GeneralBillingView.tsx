@@ -124,6 +124,7 @@ export default function GeneralBillingView({
 
     if (onUpdateSettings) {
       onUpdateSettings({
+        ...settings,
         nombreAcademia: settingsAcademia.trim(),
         rnc: settingsRNC.trim() || undefined,
         direccion: settingsDireccion.trim() || undefined,

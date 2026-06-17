@@ -106,6 +106,21 @@ export interface TicketSettings {
   direccion?: string;
   telefono?: string;
   mensajeLargo?: string;
+  
+  // Custom Typography & Sizing configurations
+  fuenteFamilia?: 'sans' | 'mono' | 'serif' | 'grotesk' | 'courier';
+  tamanoLetraTitulo?: 'text-sm' | 'text-base' | 'text-lg' | 'text-xl' | 'text-2xl' | 'text-3xl';
+  tamanoLetraCuerpo?: 'text-[10px]' | 'text-xs' | 'text-sm' | 'text-base';
+  tamanoLetraFooter?: 'text-[8px]' | 'text-[9px]' | 'text-[10px]' | 'text-xs' | 'text-sm';
+  alineacionTexto?: 'text-left' | 'text-center' | 'text-right';
+  mostrarBordes?: boolean;
+  mostrarRNC?: boolean;
+  mostrarDireccion?: boolean;
+  mostrarTelefono?: boolean;
+  mostrarSeparadorDoble?: boolean;
+  colorTemaTicket?: 'light-classic' | 'dark-premium' | 'cream-retro' | 'white-clean';
+  logoUrl?: string; // Base64 image
+  mostrarLogo?: boolean;
 }
 
 export interface Product {

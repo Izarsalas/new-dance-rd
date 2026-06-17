@@ -44,7 +44,13 @@ import {
   Trash2,
   TrendingUp,
   TrendingDown,
-  Store
+  Store,
+  Lock,
+  LogIn,
+  LogOut,
+  Key,
+  ShieldAlert,
+  Settings
 } from 'lucide-react';
 
 // Modules
@@ -57,10 +63,19 @@ import StaffModule from './components/StaffModule';
 import IncomeModule from './components/IncomeModule';
 import ExpenseModule from './components/ExpenseModule';
 import GeneralBillingView from './components/GeneralBillingView';
+import ConfigurationModule from './components/ConfigurationModule';
 import { useAlertConfirm } from './context/AlertConfirmContext';
 
 export default function App() {
   const { showAlert, showConfirm } = useAlertConfirm();
+
+  // Authentication States
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('aura_logged_in') === 'true';
+  });
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPass, setLoginPass] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   // Navigation
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -304,6 +319,39 @@ export default function App() {
       localStorage.setItem('aura_egresos', JSON.stringify([]));
       await showAlert('Toda la base de datos de prueba ha sido eliminada con éxito. ¡Ya puede registrar sus propios datos!', 'Base de Datos Vacía');
       setActiveTab('dashboard');
+    }
+  };
+
+  // --- AUTH NAVIGATION ACTIONS ---
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginUser.trim().toLowerCase() === 'admin' && loginPass === '2626') {
+      setIsLoggedIn(true);
+      setLoginError('');
+      localStorage.setItem('aura_logged_in', 'true');
+      showAlert('¡Acceso concedido!', 'Bienvenido de nuevo al panel de administración de New Dance System.', false);
+    } else {
+      setLoginError('Usuario o contraseña incorrectos. Verifique sus credenciales.');
+    }
+  };
+
+  const autofillDemo = () => {
+    setLoginUser('admin');
+    setLoginPass('2626');
+    setLoginError('');
+  };
+
+  const handleLogout = async () => {
+    const confirmed = await showConfirm(
+      'Se solicitarán de nuevo sus credenciales para acceder a la administración del sistema NDS.',
+      { title: '¿Cerrar Sesión?', confirmLabel: 'Sí, salir', cancelLabel: 'Cancelar', isDanger: true }
+    );
+    if (confirmed) {
+      setIsLoggedIn(false);
+      setLoginUser('');
+      setLoginPass('');
+      localStorage.removeItem('aura_logged_in');
+      showAlert('Sesión Cerrada', 'Ha cerrado sesión correctamente de forma segura.', false);
     }
   };
 
@@ -554,6 +602,133 @@ export default function App() {
     saveEmpleados(nextEmpleados);
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-black font-sans text-stone-250 selection:bg-gold-500 selection:text-black flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Decorative dynamic ambient glow behind */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-gold-950/20 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-amber-950/15 blur-[120px] pointer-events-none" />
+        
+        {/* Central interactive high-fidelity gold login block */}
+        <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-900 rounded-3xl p-8 shadow-2xl shadow-black/80 backdrop-blur-xl z-10 transition-all border-zinc-850">
+          
+          {/* Top subtle golden light bar */}
+          <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r from-transparent via-gold-500 to-transparent" />
+          
+          {/* Branding Header inside login */}
+          <div className="text-center mb-8">
+            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-950 to-zinc-900 border border-gold-500/30 shadow-lg shadow-gold-500/5 mb-4 mx-auto">
+              <span className="font-display font-black text-2xl text-gold-500 tracking-wider">N</span>
+            </div>
+            <h1 className="font-display text-xl font-black tracking-widest text-white uppercase">
+              NEW DANCE <span className="text-gold-500">SYSTEM</span>
+            </h1>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono mt-1">
+              Academia Premium de Baile • Acceso Administrativo
+            </p>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleLoginSubmit} className="space-y-5">
+            {loginError && (
+              <div className="flex gap-2.5 rounded-xl border border-rose-900/40 bg-rose-950/10 p-3.5 text-xs text-rose-455">
+                <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-rose-505" />
+                <div className="space-y-0.5">
+                  <span className="font-bold font-sans block text-rose-400">Error de autenticación</span>
+                  <span className="text-zinc-400 block">{loginError}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label 
+                htmlFor="login-username" 
+                className="block text-[11px] uppercase font-bold tracking-widest text-zinc-400 font-mono"
+              >
+                Usuario
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-550">
+                  <UserCircle className="h-4 w-4" />
+                </span>
+                <input
+                  id="login-username"
+                  type="text"
+                  required
+                  placeholder="Ingrese su usuario administrador"
+                  value={loginUser}
+                  onChange={(e) => { setLoginUser(e.target.value); setLoginError(''); }}
+                  className="w-full rounded-xl border border-zinc-850 bg-zinc-900/60 pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/20 transition-all font-sans"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label 
+                  htmlFor="login-password" 
+                  className="block text-[11px] uppercase font-bold tracking-widest text-zinc-400 font-mono"
+                >
+                  Contraseña
+                </label>
+                <span className="text-[10px] text-zinc-600 font-mono">2626</span>
+              </div>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-550">
+                  <Lock className="h-4 w-4" />
+                </span>
+                <input
+                  id="login-password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={loginPass}
+                  onChange={(e) => { setLoginPass(e.target.value); setLoginError(''); }}
+                  className="w-full rounded-xl border border-zinc-855 bg-zinc-900/60 pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/20 transition-all font-mono"
+                />
+              </div>
+            </div>
+
+            <button
+              id="btn-login-submit"
+              type="submit"
+              className="w-full relative group overflow-hidden rounded-xl bg-gold-500 text-black font-extrabold text-xs uppercase tracking-widest py-3.5 hover:bg-gold-400 transition-all duration-300 shadow-xl shadow-gold-500/10 cursor-pointer text-center flex items-center justify-center gap-2 border border-gold-600"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Ingresar al Sistema</span>
+            </button>
+          </form>
+
+          {/* Quick Access Helper */}
+          <div className="mt-6 border-t border-dashed border-zinc-900 pt-5 space-y-3">
+            <div className="text-center">
+              <span className="text-[10px] text-zinc-500 block uppercase tracking-wider">¿Desea acceso rápido?</span>
+            </div>
+            
+            <button
+              id="btn-autofill-demo"
+              type="button"
+              onClick={autofillDemo}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-zinc-900 border border-zinc-850 p-3.5 text-xs text-stone-200 hover:bg-zinc-850 hover:text-white transition-all cursor-pointer group"
+            >
+              <Key className="h-3.5 w-3.5 text-gold-500 group-hover:scale-110 transition-transform" />
+              <div className="text-left font-sans">
+                <span className="font-bold text-[11px] block text-gold-300">Auto-rellenar Credenciales</span>
+                <span className="text-[10px] text-zinc-400 block font-mono">Usuario: admin  • Contraseña: 2626</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Login view bottom note */}
+          <div className="text-center mt-6 text-[10px] text-zinc-600 font-mono">
+            Acceso encriptado localmente • NDS v1.1
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black font-sans text-stone-250 selection:bg-gold-500 selection:text-black">
       
@@ -592,10 +767,21 @@ export default function App() {
                 <UserCircle className="h-4.5 w-4.5 text-gold-500" />
               </div>
               <div>
-                <span className="text-white font-semibold block">Admin NDS</span>
-                <span className="text-[10px] text-emerald-400 font-mono">En Línea • Local</span>
+                <span className="text-white font-semibold block text-[11px] leading-tight">Admin NDS</span>
+                <span className="text-[9px] text-emerald-400 font-mono block leading-tight">En Línea • Local</span>
               </div>
             </div>
+
+            {/* Logout Trigger button */}
+            <button
+              id="btn-logout-desktop"
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-full bg-zinc-900 hover:bg-rose-950/20 text-zinc-400 hover:text-rose-455 px-3 py-1.5 border border-zinc-850 hover:border-rose-900/40 transition-all cursor-pointer font-semibold text-[11px]"
+              title="Cerrar Sesión"
+            >
+              <LogOut className="h-3.5 w-3.5 text-rose-500" />
+              <span>Salir</span>
+            </button>
           </div>
 
           {/* Mobile responsive toggle control */}
@@ -745,11 +931,25 @@ export default function App() {
                 <TrendingDown className="h-4 w-4 shrink-0 text-rose-500" />
                 <span className="text-white">Egresos</span>
               </button>
+
+              {/* Ajustes Generales Tab */}
+              <button
+                id="tab-config"
+                onClick={() => setActiveTab('config')}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                  activeTab === 'config'
+                    ? 'bg-zinc-900 text-gold-500 font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                    : 'text-white hover:bg-zinc-900/60'
+                }`}
+              >
+                <Settings className="h-4 w-4 shrink-0 text-gold-500" />
+                <span className="text-white">Ajustes / Facturas</span>
+              </button>
             </nav>
 
             {/* Factory utilities block */}
             <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-4 space-y-4 pt-5">
-              <span className="text-[10px] tracking-widest font-mono uppercase text-white font-semibold block font-mono">Base de Datos</span>
+              <span className="text-[10px] tracking-widest font-mono uppercase text-white font-semibold block">Base de Datos</span>
               <p className="text-[11px] text-zinc-400 leading-relaxed">
                 ¿Desea borrar todos los datos de ejemplo del sistema y comenzar con una base de datos limpia?
               </p>
@@ -761,6 +961,19 @@ export default function App() {
               >
                 <Trash2 className="h-3.5 w-3.5 text-rose-455" />
                 <span className="text-white">Vaciar Base de Datos</span>
+              </button>
+            </div>
+
+            {/* Logout Sidebar Block */}
+            <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-4 space-y-3">
+              <span className="text-[10px] tracking-widest font-mono uppercase text-zinc-500 font-semibold block">Sesión Activa</span>
+              <button
+                id="btn-sidebar-logout"
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#1a0f11] py-2 text-xs font-semibold text-rose-400 border border-rose-900/20 hover:bg-[#251316] hover:border-rose-800 transition-all cursor-pointer"
+              >
+                <LogOut className="h-3.5 w-3.5 text-rose-500" />
+                <span className="text-white">Cerrar Sesión</span>
               </button>
             </div>
           </aside>
@@ -861,6 +1074,16 @@ export default function App() {
                     <TrendingDown className="h-5 w-5 text-rose-500" />
                     <span className="text-white">Egresos</span>
                   </button>
+
+                  <button
+                    onClick={() => { setActiveTab('config'); setMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                      activeTab === 'config' ? 'bg-zinc-900 text-gold-505 border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                    }`}
+                  >
+                    <Settings className="h-5 w-5 text-gold-500" />
+                    <span className="text-white">Ajustes / Facturas</span>
+                  </button>
                 </nav>
               </div>
 
@@ -872,6 +1095,13 @@ export default function App() {
                 >
                   <Trash2 className="h-4 w-4 text-rose-500" />
                   <span className="text-white">Vaciar toda la Base de Datos</span>
+                </button>
+                <button
+                  onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1a0f11] py-3 text-xs font-bold text-rose-400 border border-rose-950/40 hover:bg-[#251316] transition-all cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4 text-rose-500" />
+                  <span className="text-white">Cerrar Sesión Administrativa</span>
                 </button>
                 <div className="text-center">
                   <span className="text-[10px] text-zinc-500 uppercase font-mono">NEW DANCE SYSTEM v1.1 • LOCAL</span>
@@ -985,6 +1215,17 @@ export default function App() {
                   setTicketSettings(newSettings);
                   localStorage.setItem('aura_billing_settings', JSON.stringify(newSettings));
                 }}
+              />
+            )}
+
+            {activeTab === 'config' && (
+              <ConfigurationModule
+                settings={ticketSettings}
+                onUpdateSettings={(newSettings) => {
+                  setTicketSettings(newSettings);
+                  localStorage.setItem('aura_billing_settings', JSON.stringify(newSettings));
+                }}
+                showAlert={showAlert}
               />
             )}
 
