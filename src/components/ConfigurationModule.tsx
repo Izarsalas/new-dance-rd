@@ -19,6 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { TicketSettings } from '../types';
+import NewDanceLogo from './NewDanceLogo';
 
 interface ConfigurationModuleProps {
   settings: TicketSettings;
@@ -53,6 +54,10 @@ export default function ConfigurationModule({
   const [colorTemaTicket, setColorTemaTicket] = useState<TicketSettings['colorTemaTicket']>(settings.colorTemaTicket || 'dark-premium');
   const [logoUrl, setLogoUrl] = useState<string | undefined>(settings.logoUrl);
   const [mostrarLogo, setMostrarLogo] = useState<boolean>(settings.mostrarLogo !== false);
+  const [logoFondoUrl, setLogoFondoUrl] = useState<string | undefined>(settings.logoFondoUrl);
+  const [mostrarLogoFondo, setMostrarLogoFondo] = useState<boolean>(settings.mostrarLogoFondo !== false);
+  const [opacidadLogoFondo, setOpacidadLogoFondo] = useState<number>(settings.opacidadLogoFondo ?? 0.08);
+  const [mostrarLogoFondoPanel, setMostrarLogoFondoPanel] = useState<boolean>(settings.mostrarLogoFondoPanel !== false);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,6 +90,37 @@ export default function ConfigurationModule({
     reader.readAsDataURL(file);
   };
 
+  const handleLogoFondoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileType = file.type;
+    const fileName = file.name.toLowerCase();
+    const isJpg = fileType === 'image/jpeg' || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg');
+
+    if (!isJpg) {
+      showAlert('Solo se permiten imágenes en formato JPG / JPEG.', 'Formato Incorrecto', true);
+      return;
+    }
+
+    if (file.size > 1.2 * 1024 * 1024) {
+      showAlert('La imagen es demasiado grande. Se recomienda usar una imagen menor a 1.2MB para un óptimo rendimiento.', 'Archivo muy Grande', true);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result && typeof event.target.result === 'string') {
+        setLogoFondoUrl(event.target.result);
+        showAlert('El logo de fondo se ha cargado correctamente en memoria. Guarde para aplicar los cambios.', 'Logo de Fondo Cargado', false);
+      }
+    };
+    reader.onerror = () => {
+      showAlert('Error al procesar la imagen de fondo.', 'Error de Lectura', true);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Trigger save
   const handleSave = () => {
     if (!nombreAcademia.trim()) {
@@ -110,7 +146,11 @@ export default function ConfigurationModule({
       mostrarSeparadorDoble,
       colorTemaTicket,
       logoUrl,
-      mostrarLogo
+      mostrarLogo,
+      logoFondoUrl,
+      mostrarLogoFondo,
+      opacidadLogoFondo,
+      mostrarLogoFondoPanel
     };
 
     onUpdateSettings(updated);
@@ -137,6 +177,10 @@ export default function ConfigurationModule({
     setColorTemaTicket('dark-premium');
     setLogoUrl(undefined);
     setMostrarLogo(true);
+    setLogoFondoUrl(undefined);
+    setMostrarLogoFondo(true);
+    setOpacidadLogoFondo(0.08);
+    setMostrarLogoFondoPanel(true);
     
     showAlert('Se han reestablecido los valores predeterminados para el diseño de facturas.', 'Diseño de Fábrica', false);
   };
@@ -271,6 +315,155 @@ export default function ConfigurationModule({
                   </span>
                   <span className="text-[10px] text-zinc-500 block">
                     {!logoUrl ? 'Debe cargar un logotipo primero para poder habilitar esta casilla' : 'Dibuja el logotipo arriba del nombre comercial'}
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Card 0.5: Marca de Agua de Fondo (Logotipo) */}
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950/20 p-6 space-y-4">
+            <h2 className="text-xs uppercase tracking-widest font-mono text-gold-500 font-bold flex items-center gap-2">
+              <Sparkles size={14} className="text-gold-500" /> Logotipo de Fondo (Marca de Agua)
+            </h2>
+            <p className="text-xs text-zinc-400 font-serif leading-relaxed">
+              Configure una marca de agua en el fondo de sus comprobantes e interfaz del sistema. Si no carga una imagen personalizada, <strong className="text-gold-500">el sistema usará el logotipo oficial vectorizado "New Dance RD" por defecto</strong>.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              {/* Drag n drop box */}
+              <div className="md:col-span-8">
+                <div 
+                  className="border-2 border-dashed border-zinc-805 bg-zinc-900/30 hover:border-gold-500/50 rounded-xl p-4 text-center relative group transition-all"
+                >
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg"
+                    onChange={handleLogoFondoUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    id="logo-fondo-file-input"
+                  />
+                  <div className="space-y-1.5 pointer-events-none">
+                    <div className="flex justify-center">
+                      <Upload size={20} className="text-zinc-500 group-hover:text-gold-500 transition-colors" />
+                    </div>
+                    <div className="text-xs text-stone-300 font-semibold group-hover:text-white transition-colors">
+                      Subir marca de agua JPG o arrástrela
+                    </div>
+                    <div className="text-[9px] text-zinc-500 font-mono uppercase">
+                      Exclusivo JPG, máx 1.2MB
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Thumbnail */}
+              <div className="md:col-span-4 flex flex-col items-center justify-center border border-zinc-900/80 bg-zinc-900/20 rounded-xl p-3 h-28 relative">
+                {logoFondoUrl ? (
+                  <div className="relative group/thumb w-full h-full flex items-center justify-center">
+                    <img 
+                      src={logoFondoUrl} 
+                      alt="Logo de Fondo" 
+                      className="max-h-full max-w-full object-contain rounded bg-white p-1 shadow-inner"
+                      referrerPolicy="no-referrer"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLogoFondoUrl(undefined);
+                        showAlert('Se ha removido la imagen de marca de agua personalizada. Ahora se utilizará la versión digital vectorial predeterminada.', 'Marca de Agua Removida', false);
+                      }}
+                      className="absolute -top-1 -right-1 bg-rose-600 hover:bg-rose-500 text-white p-1 rounded-full shadow-lg transition-all cursor-pointer hover:scale-110"
+                      title="Eliminar marca de agua"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-1 w-full h-full flex flex-col items-center justify-center">
+                    <div className="w-16 h-10 opacity-40">
+                      <NewDanceLogo lightTheme={false} />
+                    </div>
+                    <span className="text-[8px] uppercase tracking-wider text-gold-500/70 block mt-1 font-mono font-bold">Vector "New Dance" (Activo)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Slider de opacidad */}
+            <div className="space-y-2 border-t border-zinc-900 pt-3">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-zinc-400 font-bold uppercase tracking-wider text-[10px]">Opacidad de la Marca de Agua</span>
+                <span className="text-gold-500 font-bold font-mono">{Math.round(opacidadLogoFondo * 100)}%</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0.01"
+                  max="0.30"
+                  step="0.01"
+                  value={opacidadLogoFondo}
+                  onChange={(e) => setOpacidadLogoFondo(parseFloat(e.target.value))}
+                  className="w-full accent-gold-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg outline-none"
+                />
+              </div>
+              <div className="flex gap-2 justify-start">
+                <button
+                  type="button"
+                  onClick={() => setOpacidadLogoFondo(0.04)}
+                  className={`text-[9px] px-2 py-1 rounded border font-mono transition-all cursor-pointer ${opacidadLogoFondo === 0.04 ? 'border-gold-500/50 bg-gold-500/10 text-gold-500' : 'border-zinc-800 text-zinc-500 hover:text-white'}`}
+                >
+                  Sutil (4%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpacidadLogoFondo(0.10)}
+                  className={`text-[9px] px-2 py-1 rounded border font-mono transition-all cursor-pointer ${opacidadLogoFondo === 0.10 ? 'border-gold-500/50 bg-gold-500/10 text-gold-500' : 'border-zinc-800 text-zinc-500 hover:text-white'}`}
+                >
+                  Medio (10%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpacidadLogoFondo(0.20)}
+                  className={`text-[9px] px-2 py-1 rounded border font-mono transition-all cursor-pointer ${opacidadLogoFondo === 0.20 ? 'border-gold-500/50 bg-gold-500/10 text-gold-500' : 'border-zinc-800 text-zinc-500 hover:text-white'}`}
+                >
+                  Fuerte (20%)
+                </button>
+              </div>
+            </div>
+
+            {/* Switches */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-zinc-900">
+              <label className="flex items-center gap-3 rounded-xl bg-zinc-900/40 border border-zinc-850 hover:bg-zinc-900 p-3.5 cursor-pointer select-none transition-all">
+                <input
+                  type="checkbox"
+                  checked={mostrarLogoFondo}
+                  onChange={(e) => setMostrarLogoFondo(e.target.checked)}
+                  className="rounded border-zinc-750 text-gold-500 focus:ring-transparent h-4 w-4"
+                />
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold block text-stone-150">
+                    En Facturas / Cotizaciones
+                  </span>
+                  <span className="text-[9px] text-zinc-500 block leading-tight">
+                    Dibuja la marca de agua en el centro del ticket de caja.
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 rounded-xl bg-zinc-900/40 border border-zinc-850 hover:bg-zinc-900 p-3.5 cursor-pointer select-none transition-all">
+                <input
+                  type="checkbox"
+                  checked={mostrarLogoFondoPanel}
+                  onChange={(e) => setMostrarLogoFondoPanel(e.target.checked)}
+                  className="rounded border-zinc-750 text-gold-500 focus:ring-transparent h-4 w-4"
+                />
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold block text-stone-150">
+                    En el Fondo del Sistema
+                  </span>
+                  <span className="text-[9px] text-zinc-500 block leading-tight">
+                    Coloca el logotipo gigante sutil en el fondo de las vistas de trabajo.
                   </span>
                 </div>
               </label>
@@ -618,10 +811,33 @@ export default function ConfigurationModule({
             </div>
 
             {/* Simulated Receipt Component responding directly to configuration choices */}
-            <div className={`w-full rounded-2xl border p-6 transition-all duration-300 shadow-2xl ${getThemeColorClass(colorTemaTicket)} ${getFontFamilyClass(fuenteFamilia)}`}>
+            <div className={`w-full rounded-2xl border p-6 transition-all duration-300 shadow-2xl relative overflow-hidden ${getThemeColorClass(colorTemaTicket)} ${getFontFamilyClass(fuenteFamilia)}`}>
               
+              {/* BRAND WATERMARK BACKGROUND */}
+              {mostrarLogoFondo && (
+                <div 
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center z-0 select-none p-4"
+                  style={{ opacity: opacidadLogoFondo }}
+                >
+                  {logoFondoUrl ? (
+                    <img 
+                      src={logoFondoUrl} 
+                      alt="Watermark background" 
+                      className="w-11/12 h-5/6 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-11/12 h-5/6 flex items-center justify-center">
+                      <NewDanceLogo 
+                        lightTheme={colorTemaTicket === 'light-classic' || colorTemaTicket === 'white-clean' || colorTemaTicket === 'cream-retro'} 
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Surrounding design border if toggle active */}
-              <div className={`p-4 space-y-4 ${mostrarBordes ? 'border border-dashed border-current/25 rounded-xl' : ''}`}>
+              <div className={`p-4 space-y-4 relative z-10 ${mostrarBordes ? 'border border-dashed border-current/25 rounded-xl' : ''}`}>
                 
                 {/* Header Block alignment customizable */}
                 <div className={`space-y-1.5 ${alineacionTexto}`}>

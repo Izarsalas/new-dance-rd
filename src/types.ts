@@ -121,6 +121,10 @@ export interface TicketSettings {
   colorTemaTicket?: 'light-classic' | 'dark-premium' | 'cream-retro' | 'white-clean';
   logoUrl?: string; // Base64 image
   mostrarLogo?: boolean;
+  logoFondoUrl?: string; // Watermark image (defaulting to New Dance RD)
+  mostrarLogoFondo?: boolean; // Show background watermark in tickets
+  opacidadLogoFondo?: number; // Opacity level (0.01 to 0.3)
+  mostrarLogoFondoPanel?: boolean; // Show background watermark in dashboard/workspace panel
 }
 
 export interface Product {

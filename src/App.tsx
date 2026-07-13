@@ -64,6 +64,7 @@ import IncomeModule from './components/IncomeModule';
 import ExpenseModule from './components/ExpenseModule';
 import GeneralBillingView from './components/GeneralBillingView';
 import ConfigurationModule from './components/ConfigurationModule';
+import NewDanceLogo from './components/NewDanceLogo';
 import { useAlertConfirm } from './context/AlertConfirmContext';
 
 export default function App() {
@@ -616,9 +617,20 @@ export default function App() {
           <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r from-transparent via-gold-500 to-transparent" />
           
           {/* Branding Header inside login */}
-          <div className="text-center mb-8">
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-950 to-zinc-900 border border-gold-500/30 shadow-lg shadow-gold-500/5 mb-4 mx-auto">
-              <span className="font-display font-black text-2xl text-gold-500 tracking-wider">N</span>
+          <div className="text-center mb-6">
+            <div className="flex justify-center mb-4">
+              {ticketSettings.mostrarLogo && ticketSettings.logoUrl ? (
+                <img 
+                  src={ticketSettings.logoUrl} 
+                  alt="Logo Academia" 
+                  className="max-h-24 max-w-[200px] object-contain rounded-2xl p-1.5 bg-white border border-zinc-200/50 shadow-xl"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-56 h-28 flex items-center justify-center bg-zinc-950/50 rounded-2xl p-3 border border-zinc-900 gold-glow-intense">
+                  <NewDanceLogo lightTheme={false} />
+                </div>
+              )}
             </div>
             <h1 className="font-display text-xl font-black tracking-widest text-white uppercase">
               NEW DANCE <span className="text-gold-500">SYSTEM</span>
@@ -730,22 +742,57 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black font-sans text-stone-250 selection:bg-gold-500 selection:text-black">
+    <div className="min-h-screen bg-black font-sans text-stone-250 selection:bg-gold-500 selection:text-black relative overflow-hidden">
       
-      {/* Brand Header */}
+      {/* APP PANEL BACKGROUND LOGO WATERMARK */}
+      {ticketSettings.mostrarLogoFondoPanel !== false && (
+        <div 
+          className="fixed inset-0 pointer-events-none flex items-center justify-center z-0 select-none transition-all duration-300 p-8"
+          style={{ 
+            opacity: (ticketSettings.opacidadLogoFondo ?? 0.08) * 0.45 // Highly subtle panel watermark
+          }}
+        >
+          {ticketSettings.logoFondoUrl ? (
+            <img 
+              src={ticketSettings.logoFondoUrl} 
+              alt="Watermark background" 
+              className="max-w-[80vw] max-h-[80vh] object-contain"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="max-w-[75vw] max-h-[75vh] w-full h-full flex items-center justify-center">
+              <NewDanceLogo lightTheme={false} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Main content wrapper relative to sit above the watermark background */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+      
+        {/* Brand Header */}
       <header className="sticky top-0 z-40 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           
-          {/* Logo brand */}
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-950 to-zinc-900 border border-gold-500/30 gold-glow">
-              <span className="font-display font-black text-lg text-gold-500 tracking-wider">N</span>
-            </div>
+           {/* Logo brand */}
+          <div className="flex items-center gap-3">
+            {ticketSettings.mostrarLogo && ticketSettings.logoUrl ? (
+              <img 
+                src={ticketSettings.logoUrl} 
+                alt="Logo Academia" 
+                className="h-10 w-10 object-contain rounded-lg p-0.5 bg-white border border-zinc-200"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="h-10 w-16 flex items-center justify-center rounded-xl bg-gradient-to-br from-zinc-950 to-zinc-900 border border-gold-500/20 gold-glow p-1">
+                <NewDanceLogo lightTheme={false} />
+              </div>
+            )}
             <div>
-              <span className="font-display text-lg font-black tracking-widest text-white uppercase block">
+              <span className="font-display text-lg font-black tracking-widest text-white uppercase block leading-none">
                 NEW DANCE <span className="text-gold-500">SYSTEM</span>
               </span>
-              <span className="text-[9px] text-zinc-500 tracking-wider uppercase font-mono block">
+              <span className="text-[9px] text-zinc-500 tracking-wider uppercase font-mono block mt-1">
                 Academia Premium de Baile
               </span>
             </div>
@@ -1250,6 +1297,7 @@ export default function App() {
         </div>
       </footer>
 
+      </div> {/* Closing the relative z-10 wrapper */}
     </div>
   );
 }

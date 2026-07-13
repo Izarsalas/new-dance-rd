@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Product, Sale, SaleItem, Alumno, TicketSettings } from '../types';
+import NewDanceLogo from './NewDanceLogo';
 import { 
   ShoppingCart, 
   Search, 
@@ -799,7 +800,7 @@ export default function SalesView({
           <div className="relative w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl gold-glow-intense my-4 md:my-8 max-h-[92vh] flex flex-col items-center">
             
             {/* TICKET WRAPPER (STANDARDIZED THERMAL TYPE LAYOUT FOR BROWSER PRINT) */}
-            <div className={`w-full bg-white text-zinc-950 p-5 rounded-lg shadow-inner flex-1 overflow-y-auto printable-section space-y-4
+            <div className={`w-full bg-white text-zinc-950 p-5 rounded-lg shadow-inner flex-1 overflow-y-auto printable-section space-y-4 relative overflow-hidden
               ${(() => {
                 switch (settings.fuenteFamilia) {
                   case 'sans': return 'font-sans';
@@ -812,7 +813,28 @@ export default function SalesView({
               })()}
             `}>
               
-              <div className={`space-y-4 ${settings.mostrarBordes ? 'border border-dashed border-zinc-400 rounded-xl p-3' : ''}`}>
+              {/* BRAND WATERMARK BACKGROUND */}
+              {settings.mostrarLogoFondo !== false && (
+                <div 
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center z-0 select-none p-4"
+                  style={{ opacity: settings.opacidadLogoFondo ?? 0.08 }}
+                >
+                  {settings.logoFondoUrl ? (
+                    <img 
+                      src={settings.logoFondoUrl} 
+                      alt="Watermark background" 
+                      className="w-11/12 h-5/6 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-11/12 h-5/6 flex items-center justify-center">
+                      <NewDanceLogo lightTheme={true} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className={`space-y-4 relative z-10 ${settings.mostrarBordes ? 'border border-dashed border-zinc-400 rounded-xl p-3' : ''}`}>
                 
                 {/* BRAND HEADER */}
                 <div className={`${settings.alineacionTexto || 'text-center'} space-y-1`}>
