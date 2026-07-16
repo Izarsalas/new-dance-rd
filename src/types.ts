@@ -23,8 +23,22 @@ export interface Alumno {
   fechaPagoInicial?: string; // YYYY-MM-DD de pago inicial
   montoMensualidad?: number; // Monto de la mensualidad recurrente (mensualidades posteriores)
   fechaPagoMensualidad?: string; // YYYY-MM-DD del pago de mensualidad
+  planPago?: 'Mensual' | 'Trimestral' | 'Semestral' | 'Pago Único';
+  descuentoValor?: number;
+  descuentoTipo?: 'Porcentaje' | 'Fijo';
   horarioClases?: string; // Horario de clases
   observaciones?: string; // Notas u observaciones
+  foto?: string; // Base64 representation of JPG photo of the student
+  es2x1?: boolean; // Is under 2x1 promotion?
+  acompananteNombre?: string; // Name of the companion
+  acompananteFoto?: string; // Base64 representation of JPG photo of the companion
+  acompananteContacto?: string; // Reference contact for the companion
+  acompananteTelefono?: string; // Phone for companion
+  acompananteCorreo?: string; // Email for companion
+  acompananteCedula?: string; // ID/Passport of companion
+  acompananteFechaVencimiento?: string; // YYYY-MM-DD for when the 1 month free grace period expires
+  acompananteHorarioClases?: string; // Class schedule for the companion
+  representanteFoto?: string; // Base64 representation of JPG photo of the representative/guardian
 }
 
 export interface Clase {
@@ -43,6 +57,10 @@ export interface Pago {
   alumnoId: string;
   mes: string; // Ej. "2026-05" o "Mayo 2026"
   monto: number;
+  montoOriginal?: number;
+  planPago?: 'Mensual' | 'Trimestral' | 'Semestral' | 'Pago Único';
+  descuentoValor?: number;
+  descuentoTipo?: 'Porcentaje' | 'Fijo';
   fechaPago: string | null; // YYYY-MM-DD o null si pendiente
   estado: 'Pagado' | 'Pendiente' | 'Atrasado';
   metodoPago?: 'Efectivo' | 'Transferencia' | 'Tarjeta' | null;

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alumno, Pago } from '../types';
 import { 
   DollarSign, 
@@ -48,7 +48,50 @@ export default function PaymentModule({
   // Manual payment generation state
   const [selectedAlumnoId, setSelectedAlumnoId] = useState('');
   const [newPayMonth, setNewPayMonth] = useState('Mayo 2026');
-  const [newPayAmount, setNewPayAmount] = useState(2500);
+  const [newPayBaseAmount, setNewPayBaseAmount] = useState<number | ''>(2500);
+  const [newPayPlanPago, setNewPayPlanPago] = useState<'Mensual' | 'Trimestral' | 'Semestral' | 'Pago Único'>('Mensual');
+  const [newPayDescuentoValor, setNewPayDescuentoValor] = useState<number | ''>('');
+  const [newPayDescuentoTipo, setNewPayDescuentoTipo] = useState<'Porcentaje' | 'Fijo'>('Fijo');
+
+  const getStudentBaseAmount = (alumno: Alumno) => {
+    if (!alumno.montoMensualidad) return 0;
+    const final = alumno.montoMensualidad;
+    const desc = alumno.descuentoValor ? Number(alumno.descuentoValor) : 0;
+    if (!desc) return final;
+    if (alumno.descuentoTipo === 'Porcentaje') {
+      const pct = desc / 100;
+      if (pct >= 1) return final; // Avoid division by zero
+      return Math.round(final / (1 - pct));
+    } else {
+      return final + desc;
+    }
+  };
+
+  useEffect(() => {
+    if (selectedAlumnoId) {
+      const student = alumnos.find(a => a.id === selectedAlumnoId);
+      if (student) {
+        const base = getStudentBaseAmount(student);
+        setNewPayBaseAmount(base || 2500);
+        setNewPayPlanPago(student.planPago || 'Mensual');
+        setNewPayDescuentoValor(student.descuentoValor !== undefined && student.descuentoValor !== null ? student.descuentoValor : '');
+        setNewPayDescuentoTipo(student.descuentoTipo || 'Fijo');
+      }
+    }
+  }, [selectedAlumnoId, alumnos]);
+
+  // Compute final discounted payment amount live
+  const computedNewPayAmount = (() => {
+    if (newPayBaseAmount === '') return 0;
+    const base = Number(newPayBaseAmount);
+    if (!newPayDescuentoValor) return base;
+    const desc = Number(newPayDescuentoValor);
+    if (newPayDescuentoTipo === 'Porcentaje') {
+      return Math.max(0, base - (base * (desc / 100)));
+    } else {
+      return Math.max(0, base - desc);
+    }
+  })();
 
   const monthsOptions = Array.from(new Set(pagos.map(p => p.mes)));
 
@@ -62,7 +105,11 @@ export default function PaymentModule({
     onAddPayment({
       alumnoId: selectedAlumnoId,
       mes: newPayMonth,
-      monto: Number(newPayAmount) || 2500,
+      monto: Number(computedNewPayAmount) || 0,
+      montoOriginal: newPayBaseAmount !== '' ? Number(newPayBaseAmount) : undefined,
+      planPago: newPayPlanPago,
+      descuentoValor: newPayDescuentoValor !== '' ? Number(newPayDescuentoValor) : undefined,
+      descuentoTipo: newPayDescuentoTipo,
       fechaPago: null,
       estado: 'Pendiente'
     });
@@ -273,8 +320,11 @@ export default function PaymentModule({
                     </td>
 
                     {/* Month Period */}
-                    <td className="p-4 font-normal font-sans text-zinc-300">
-                      {pago.mes}
+                    <td className="p-4">
+                      <span className="font-medium text-zinc-300 block">{pago.mes}</span>
+                      <span className="inline-flex items-center text-[10px] bg-zinc-900 border border-zinc-850 text-zinc-400 px-1.5 py-0.5 rounded mt-0.5 font-semibold">
+                        {pago.planPago || 'Mensual'}
+                      </span>
                     </td>
 
                     {/* Class Rhythm */}
@@ -283,8 +333,28 @@ export default function PaymentModule({
                     </td>
 
                     {/* Amount */}
-                    <td className="p-4 font-mono font-bold text-white">
-                      RD$ {pago.monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                    <td className="p-4">
+                      {pago.montoOriginal && pago.montoOriginal !== pago.monto ? (
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] text-zinc-500 line-through block">
+                            RD$ {pago.montoOriginal.toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono font-bold text-white text-sm">
+                              RD$ {pago.monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                            </span>
+                            {pago.descuentoValor ? (
+                              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/40 px-1 py-0.5 rounded">
+                                {pago.descuentoTipo === 'Porcentaje' ? `-${pago.descuentoValor}%` : `-${pago.descuentoValor}`}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="font-mono font-bold text-white">
+                          RD$ {pago.monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
                     </td>
 
                     {/* Payment Date */}
@@ -496,17 +566,70 @@ export default function PaymentModule({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">Monto de cobro (RD$) *</label>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">Frecuencia de Pago *</label>
+                <select
+                  id="add-payment-plan"
+                  value={newPayPlanPago}
+                  onChange={(e) => setNewPayPlanPago(e.target.value as any)}
+                  className="w-full rounded-lg border border-zinc-855 bg-zinc-900 p-2.5 text-sm text-white outline-none focus:border-gold-500/55 cursor-pointer"
+                >
+                  <option value="Mensual">Mensual</option>
+                  <option value="Trimestral">Trimestral (Cada 3 meses)</option>
+                  <option value="Semestral">Semestral (Cada 6 meses)</option>
+                  <option value="Pago Único">Pago Único (Un solo pago)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">Monto Base (RD$) *</label>
                 <input
-                  id="add-payment-monto"
+                  id="add-payment-monto-base"
                   type="number"
                   required
-                  min={1}
-                  value={newPayAmount}
-                  onChange={(e) => setNewPayAmount(Number(e.target.value))}
+                  min={0}
+                  value={newPayBaseAmount}
+                  onChange={(e) => setNewPayBaseAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full rounded-lg border border-zinc-855 bg-zinc-900 p-2.5 text-sm font-mono text-white outline-none focus:border-gold-500/55"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">Aplicar Descuento</label>
+                <div className="flex gap-1.5">
+                  <select
+                    value={newPayDescuentoTipo}
+                    onChange={(e) => setNewPayDescuentoTipo(e.target.value as any)}
+                    className="rounded-lg border border-zinc-855 bg-zinc-900 p-2 text-xs text-white outline-none focus:border-gold-500/55 cursor-pointer w-20"
+                  >
+                    <option value="Fijo">RD$</option>
+                    <option value="Porcentaje">%</option>
+                  </select>
+                  <input
+                    id="add-payment-descuento-valor"
+                    type="number"
+                    placeholder="Ej. 500"
+                    value={newPayDescuentoValor}
+                    onChange={(e) => setNewPayDescuentoValor(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="flex-1 rounded-lg border border-zinc-855 bg-zinc-900 p-2.5 text-sm text-white outline-none focus:border-gold-500/55 placeholder-zinc-700"
+                  />
+                </div>
+              </div>
+
+              {/* Real-time total card inside modal */}
+              {newPayBaseAmount !== '' && (
+                <div className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-900 flex justify-between items-center text-xs animate-fade-in">
+                  <div>
+                    <span className="text-zinc-500">Monto Base:</span>{' '}
+                    <span className="text-zinc-500 line-through">RD$ {Number(newPayBaseAmount).toLocaleString('es-DO')}</span>
+                  </div>
+                  <div>
+                    <span className="text-gold-400 font-bold">Total Final:</span>{' '}
+                    <span className="text-white font-extrabold font-mono text-sm ml-1">
+                      RD$ {computedNewPayAmount.toLocaleString('es-DO')}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-900">
                 <button
