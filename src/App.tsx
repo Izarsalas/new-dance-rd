@@ -16,7 +16,14 @@ import {
   Product,
   Sale,
   Recibo,
-  TicketSettings
+  TicketSettings,
+  ActividadExtra,
+  InscripcionActividad,
+  RegistroSuplencia,
+  SalonEstudio,
+  RentaSalon,
+  CorteCaja,
+  UsuarioSistema
 } from './types';
 import { 
   INITIAL_STUDENTS, 
@@ -24,7 +31,13 @@ import {
   INITIAL_PAYMENTS, 
   INITIAL_ATTENDANCE,
   INITIAL_AREAS,
-  INITIAL_EMPLOYEES
+  INITIAL_EMPLOYEES,
+  INITIAL_ACTIVITIES,
+  INITIAL_SUBSTITUTIONS,
+  INITIAL_SALONES,
+  INITIAL_RENTALS,
+  INITIAL_USERS,
+  ALL_MODULE_PERMISSIONS
 } from './initialData';
 
 // Icons
@@ -50,7 +63,14 @@ import {
   LogOut,
   Key,
   ShieldAlert,
-  Settings
+  Settings,
+  Compass,
+  Building2,
+  Wallet,
+  Calculator,
+  ShieldCheck,
+  UserPlus,
+  UserCheck
 } from 'lucide-react';
 
 // Modules
@@ -64,6 +84,10 @@ import IncomeModule from './components/IncomeModule';
 import ExpenseModule from './components/ExpenseModule';
 import GeneralBillingView from './components/GeneralBillingView';
 import ConfigurationModule from './components/ConfigurationModule';
+import ActivityModule from './components/ActivityModule';
+import RentalModule from './components/RentalModule';
+import CashRegisterModule from './components/CashRegisterModule';
+import UsersModule from './components/UsersModule';
 import NewDanceLogo from './components/NewDanceLogo';
 import { useAlertConfirm } from './context/AlertConfirmContext';
 
@@ -82,6 +106,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Users & RBAC Permissions State
+  const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
+  const [currentUser, setCurrentUser] = useState<UsuarioSistema | null>(null);
+
   // Core States
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [clases, setClases] = useState<Clase[]>([]);
@@ -91,6 +119,11 @@ export default function App() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [ingresos, setIngresos] = useState<Ingreso[]>([]);
   const [egresos, setEgresos] = useState<Egreso[]>([]);
+  const [actividades, setActividades] = useState<ActividadExtra[]>([]);
+  const [suplencias, setSuplencias] = useState<RegistroSuplencia[]>([]);
+  const [salones, setSalones] = useState<SalonEstudio[]>([]);
+  const [rentas, setRentas] = useState<RentaSalon[]>([]);
+  const [cortes, setCortes] = useState<CorteCaja[]>([]);
 
   // Billing POS States
   const [products, setProducts] = useState<Product[]>([]);
@@ -113,6 +146,8 @@ export default function App() {
   // Load from local storage or hydrate with gorgeous default values
   useEffect(() => {
     try {
+      const storedUsuarios = localStorage.getItem('aura_usuarios');
+      const storedCurrentUser = localStorage.getItem('aura_current_user');
       const storedAlumnos = localStorage.getItem('aura_alumnos');
       const storedClases = localStorage.getItem('aura_clases');
       const storedPagos = localStorage.getItem('aura_pagos');
@@ -121,11 +156,32 @@ export default function App() {
       const storedEmpleados = localStorage.getItem('aura_empleados');
       const storedIngresos = localStorage.getItem('aura_ingresos');
       const storedEgresos = localStorage.getItem('aura_egresos');
+      const storedActividades = localStorage.getItem('aura_actividades');
+      const storedSuplencias = localStorage.getItem('aura_suplencias');
+      const storedSalones = localStorage.getItem('aura_salones_estudios');
+      const storedRentas = localStorage.getItem('aura_rentas_salones');
+      const storedCortes = localStorage.getItem('aura_cortes_caja');
       
       const storedProducts = localStorage.getItem('aura_billing_products');
       const storedSales = localStorage.getItem('aura_billing_sales');
       const storedRecibos = localStorage.getItem('aura_billing_recibos');
       const storedTicketSettings = localStorage.getItem('aura_billing_settings');
+
+      let loadedUsers = INITIAL_USERS;
+      if (storedUsuarios) {
+        loadedUsers = JSON.parse(storedUsuarios);
+        setUsuarios(loadedUsers);
+      } else {
+        setUsuarios(INITIAL_USERS);
+        localStorage.setItem('aura_usuarios', JSON.stringify(INITIAL_USERS));
+      }
+
+      if (storedCurrentUser) {
+        setCurrentUser(JSON.parse(storedCurrentUser));
+      } else {
+        setCurrentUser(loadedUsers[0]);
+        localStorage.setItem('aura_current_user', JSON.stringify(loadedUsers[0]));
+      }
 
       if (storedAlumnos) {
         setAlumnos(JSON.parse(storedAlumnos));
@@ -192,16 +248,48 @@ export default function App() {
         localStorage.setItem('aura_egresos', JSON.stringify(dummyExpenses));
       }
 
+      if (storedActividades) {
+        setActividades(JSON.parse(storedActividades));
+      } else {
+        setActividades(INITIAL_ACTIVITIES);
+        localStorage.setItem('aura_actividades', JSON.stringify(INITIAL_ACTIVITIES));
+      }
+
+      if (storedSuplencias) {
+        setSuplencias(JSON.parse(storedSuplencias));
+      } else {
+        setSuplencias(INITIAL_SUBSTITUTIONS);
+        localStorage.setItem('aura_suplencias', JSON.stringify(INITIAL_SUBSTITUTIONS));
+      }
+
+      if (storedSalones) {
+        setSalones(JSON.parse(storedSalones));
+      } else {
+        setSalones(INITIAL_SALONES);
+        localStorage.setItem('aura_salones_estudios', JSON.stringify(INITIAL_SALONES));
+      }
+
+      if (storedRentas) {
+        setRentas(JSON.parse(storedRentas));
+      } else {
+        setRentas(INITIAL_RENTALS);
+        localStorage.setItem('aura_rentas_salones', JSON.stringify(INITIAL_RENTALS));
+      }
+
+      if (storedCortes) {
+        setCortes(JSON.parse(storedCortes));
+      }
+
       if (storedProducts) {
         setProducts(JSON.parse(storedProducts));
       } else {
         const defaultProducts: Product[] = [
-          { id: 'p1', codigo: 'SALS-01', nombre: 'Zapatos de Salsa Profesional - Girasol Taco 5.5', precio: 4500, costo: 2500, stock: 8, departamento: 'Zapatos de Baile', inventarioActivo: true },
-          { id: 'p2', codigo: 'BACH-02', nombre: 'Zapatos de Bachata Lady Charm - Terciopelo Negro', precio: 3800, costo: 2200, stock: 12, departamento: 'Zapatos de Baile', inventarioActivo: true },
-          { id: 'p3', codigo: 'FAM-03', nombre: 'Falda de Ensayo Flamenco - Seda Volante Rojo', precio: 1800, costo: 950, stock: 6, departamento: 'Uniformes', inventarioActivo: true },
-          { id: 'p4', codigo: 'TSH-04', nombre: 'Camiseta Oficial Aura Dance Academy Unisex - Algodón Premium', precio: 850, costo: 350, stock: 25, departamento: 'Uniformes', inventarioActivo: true },
-          { id: 'p5', codigo: 'BEB-05', nombre: 'Botella de Agua Mineral Fría - 500ml de Manantial', precio: 50, costo: 15, stock: 40, departamento: 'Bebidas', inventarioActivo: true },
-          { id: 'p6', codigo: 'BOL-06', nombre: 'Bolso Deportivo Aura Grande con Compartimento para Zapatos', precio: 1200, costo: 600, stock: 15, departamento: 'Accesorios', inventarioActivo: true }
+          { id: 'p1', codigo: 'SALS-01', nombre: 'Zapatos de Salsa Profesional - Girasol Taco 5.5', precio: 4500, costo: 2500, stock: 8, stockMinimo: 3, departamento: 'Zapatos de Baile', inventarioActivo: true },
+          { id: 'p2', codigo: 'BACH-02', nombre: 'Zapatos de Bachata Lady Charm - Terciopelo Negro', precio: 3800, costo: 2200, stock: 2, stockMinimo: 5, departamento: 'Zapatos de Baile', inventarioActivo: true },
+          { id: 'p3', codigo: 'FAM-03', nombre: 'Falda de Ensayo Flamenco - Seda Volante Rojo', precio: 1800, costo: 950, stock: 6, stockMinimo: 3, departamento: 'Uniformes', inventarioActivo: true },
+          { id: 'p4', codigo: 'TSH-04', nombre: 'Camiseta Oficial Aura Dance Academy Unisex - Algodón Premium', precio: 850, costo: 350, stock: 25, stockMinimo: 10, departamento: 'Uniformes', inventarioActivo: true },
+          { id: 'p5', codigo: 'BEB-05', nombre: 'Botella de Agua Mineral Fría - 500ml de Manantial', precio: 50, costo: 15, stock: 40, stockMinimo: 15, departamento: 'Bebidas', inventarioActivo: true },
+          { id: 'p6', codigo: 'BOL-06', nombre: 'Bolso Deportivo Aura Grande con Compartimento para Zapatos', precio: 1200, costo: 600, stock: 3, stockMinimo: 5, departamento: 'Accesorios', inventarioActivo: true }
         ];
         setProducts(defaultProducts);
         localStorage.setItem('aura_billing_products', JSON.stringify(defaultProducts));
@@ -254,6 +342,35 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Helper to check user permission
+  const hasPermission = (permId: string) => {
+    if (!currentUser) return true;
+    if (currentUser.esSuperAdmin || currentUser.cargo === 'Director General' || currentUser.cargo === 'Administrador') return true;
+    return currentUser.permisos.includes(permId);
+  };
+
+  const saveUsuarios = (newUsers: UsuarioSistema[]) => {
+    setUsuarios(newUsers);
+    localStorage.setItem('aura_usuarios', JSON.stringify(newUsers));
+    // Also update currentUser if modified
+    if (currentUser) {
+      const updatedSelf = newUsers.find(u => u.id === currentUser.id);
+      if (updatedSelf) {
+        setCurrentUser(updatedSelf);
+        localStorage.setItem('aura_current_user', JSON.stringify(updatedSelf));
+      }
+    }
+  };
+
+  const handleSwitchUser = (user: UsuarioSistema) => {
+    setCurrentUser(user);
+    localStorage.setItem('aura_current_user', JSON.stringify(user));
+    // If active tab not allowed for new user, switch to first allowed
+    if (!user.esSuperAdmin && !user.permisos.includes(activeTab)) {
+      setActiveTab(user.permisos[0] || 'dashboard');
+    }
+  };
+
   // Helper to persist state securely inside React state and LocalStorage simultaneously
   const saveAlumnos = (newAlumnos: Alumno[]) => {
     setAlumnos(newAlumnos);
@@ -295,6 +412,100 @@ export default function App() {
     localStorage.setItem('aura_egresos', JSON.stringify(newEgresos));
   };
 
+  const saveCortes = (newCortes: CorteCaja[]) => {
+    setCortes(newCortes);
+    localStorage.setItem('aura_cortes_caja', JSON.stringify(newCortes));
+  };
+
+  const saveActividades = (newActividades: ActividadExtra[]) => {
+    setActividades(newActividades);
+    localStorage.setItem('aura_actividades', JSON.stringify(newActividades));
+  };
+
+  const handleAddActivity = (actData: Omit<ActividadExtra, 'id' | 'inscritos'>) => {
+    const newId = 'act_' + Date.now();
+    const newAct: ActividadExtra = {
+      ...actData,
+      id: newId,
+      inscritos: []
+    };
+    saveActividades([newAct, ...actividades]);
+  };
+
+  const handleUpdateActivity = (updatedAct: ActividadExtra) => {
+    const nextAct = actividades.map(a => a.id === updatedAct.id ? updatedAct : a);
+    saveActividades(nextAct);
+  };
+
+  const handleDeleteActivity = (id: string) => {
+    const nextAct = actividades.filter(a => a.id !== id);
+    saveActividades(nextAct);
+  };
+
+  const handleAddInscripcion = (actividadId: string, inscripcionData: Omit<InscripcionActividad, 'id'>) => {
+    const newInscripcionId = 'ins_' + Date.now();
+    const newInscripcion: InscripcionActividad = {
+      ...inscripcionData,
+      id: newInscripcionId
+    };
+
+    const nextAct = actividades.map(act => {
+      if (act.id === actividadId) {
+        const nextInscritos = [...act.inscritos, newInscripcion];
+        const esAgotado = nextInscritos.length >= act.cuposMaximos;
+        return {
+          ...act,
+          inscritos: nextInscritos,
+          estado: esAgotado ? 'Agotado' : act.estado
+        };
+      }
+      return act;
+    });
+
+    saveActividades(nextAct);
+  };
+
+  const handleDeleteInscripcion = (actividadId: string, inscripcionId: string) => {
+    const nextAct = actividades.map(act => {
+      if (act.id === actividadId) {
+        const nextInscritos = act.inscritos.filter(i => i.id !== inscripcionId);
+        const yaNoAgotado = nextInscritos.length < act.cuposMaximos && act.estado === 'Agotado';
+        return {
+          ...act,
+          inscritos: nextInscritos,
+          estado: yaNoAgotado ? 'Abierto' : act.estado
+        };
+      }
+      return act;
+    });
+
+    saveActividades(nextAct);
+  };
+
+  const saveSuplencias = (newSuplencias: RegistroSuplencia[]) => {
+    setSuplencias(newSuplencias);
+    localStorage.setItem('aura_suplencias', JSON.stringify(newSuplencias));
+  };
+
+  const handleAddSuplencia = (supData: Omit<RegistroSuplencia, 'id'>) => {
+    const newId = 'sup_' + Date.now();
+    const newSup: RegistroSuplencia = {
+      ...supData,
+      id: newId
+    };
+    saveSuplencias([newSup, ...suplencias]);
+  };
+
+  const handleUpdateSuplencia = (updatedSup: RegistroSuplencia) => {
+    const nextSup = suplencias.map(s => s.id === updatedSup.id ? updatedSup : s);
+    saveSuplencias(nextSup);
+  };
+
+  const handleDeleteSuplencia = (id: string) => {
+    const nextSup = suplencias.filter(s => s.id !== id);
+    saveSuplencias(nextSup);
+  };
+
   // Restores database to initial mock layout instantly
   const resetToFactoryDefaults = async () => {
     const confirmed = await showConfirm(
@@ -310,6 +521,8 @@ export default function App() {
       setEmpleados(INITIAL_EMPLOYEES);
       setIngresos([]);
       setEgresos([]);
+      setActividades(INITIAL_ACTIVITIES);
+      setSuplencias(INITIAL_SUBSTITUTIONS);
       localStorage.setItem('aura_alumnos', JSON.stringify(INITIAL_STUDENTS));
       localStorage.setItem('aura_clases', JSON.stringify(INITIAL_CLASSES));
       localStorage.setItem('aura_pagos', JSON.stringify(INITIAL_PAYMENTS));
@@ -318,6 +531,10 @@ export default function App() {
       localStorage.setItem('aura_empleados', JSON.stringify(INITIAL_EMPLOYEES));
       localStorage.setItem('aura_ingresos', JSON.stringify([]));
       localStorage.setItem('aura_egresos', JSON.stringify([]));
+      localStorage.setItem('aura_actividades', JSON.stringify(INITIAL_ACTIVITIES));
+      localStorage.setItem('aura_suplencias', JSON.stringify(INITIAL_SUBSTITUTIONS));
+      localStorage.setItem('aura_salones_estudios', JSON.stringify(INITIAL_SALONES));
+      localStorage.setItem('aura_rentas_salones', JSON.stringify([]));
       await showAlert('Toda la base de datos de prueba ha sido eliminada con éxito. ¡Ya puede registrar sus propios datos!', 'Base de Datos Vacía');
       setActiveTab('dashboard');
     }
@@ -326,11 +543,57 @@ export default function App() {
   // --- AUTH NAVIGATION ACTIONS ---
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginUser.trim().toLowerCase() === 'admin' && loginPass === '2626') {
+    const cleanUser = loginUser.trim().toLowerCase().replace(/^@/, '');
+    
+    // Find matching user in usuarios database
+    const matched = usuarios.find(
+      u => (u.username.toLowerCase() === cleanUser || (u.email && u.email.toLowerCase() === cleanUser)) &&
+           u.password === loginPass
+    );
+
+    if (matched) {
+      if (matched.estado === 'Inactivo') {
+        setLoginError('Esta cuenta de usuario está inactiva. Consulte con la dirección general.');
+        return;
+      }
+
+      const now = new Date();
+      const accessTime = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+      const updatedUser = { ...matched, ultimoAcceso: accessTime };
+      const updatedList = usuarios.map(u => u.id === matched.id ? updatedUser : u);
+      saveUsuarios(updatedList);
+
+      setCurrentUser(updatedUser);
+      localStorage.setItem('aura_current_user', JSON.stringify(updatedUser));
       setIsLoggedIn(true);
       setLoginError('');
       localStorage.setItem('aura_logged_in', 'true');
-      showAlert('¡Acceso concedido!', 'Bienvenido de nuevo al panel de administración de New Dance System.', false);
+
+      if (!updatedUser.esSuperAdmin && !updatedUser.permisos.includes(activeTab)) {
+        setActiveTab(updatedUser.permisos[0] || 'dashboard');
+      }
+
+      showAlert('¡Acceso Concedido!', `Bienvenido ${updatedUser.nombre} (${updatedUser.cargo}) a New Dance System.`, 'success');
+    } else if ((cleanUser === 'admin' || cleanUser === 'director') && (loginPass === '2626' || loginPass === 'admin123')) {
+      // Legacy Admin fallback
+      const defaultAdmin = usuarios[0] || {
+        id: 'usr-admin-master',
+        nombre: 'Director General',
+        username: 'admin',
+        password: '2626',
+        cargo: 'Director General',
+        estado: 'Activo',
+        permisos: ALL_MODULE_PERMISSIONS.map(m => m.id),
+        esSuperAdmin: true,
+        fechaCreacion: '2026-01-01 00:00'
+      };
+      setCurrentUser(defaultAdmin);
+      localStorage.setItem('aura_current_user', JSON.stringify(defaultAdmin));
+      setIsLoggedIn(true);
+      setLoginError('');
+      localStorage.setItem('aura_logged_in', 'true');
+      showAlert('¡Acceso Concedido!', `Bienvenido ${defaultAdmin.nombre} (${defaultAdmin.cargo}) a New Dance System.`, 'success');
     } else {
       setLoginError('Usuario o contraseña incorrectos. Verifique sus credenciales.');
     }
@@ -774,28 +1037,24 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           
-           {/* Logo brand */}
-          <div className="flex items-center gap-3">
+           {/* Logo brand - Big Logo */}
+          <div className="flex items-center">
             {ticketSettings.mostrarLogo && ticketSettings.logoUrl ? (
               <img 
                 src={ticketSettings.logoUrl} 
                 alt="Logo Academia" 
-                className="h-10 w-10 object-contain rounded-lg p-0.5 bg-white border border-zinc-200"
+                className="h-12 sm:h-14 w-auto object-contain rounded-lg p-1 bg-zinc-900 border border-zinc-800"
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="h-10 w-16 flex items-center justify-center rounded-xl bg-gradient-to-br from-zinc-950 to-zinc-900 border border-gold-500/20 gold-glow p-1">
-                <NewDanceLogo lightTheme={false} />
+              <div 
+                onClick={() => setActiveTab('dashboard')}
+                className="h-20 sm:h-24 md:h-28 w-auto flex items-center justify-center px-6 sm:px-10 py-3 rounded-2xl bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-gold-500/50 shadow-2xl shadow-gold-500/20 hover:border-gold-500/80 transition-all cursor-pointer group"
+                title="Ir al Tablero Principal"
+              >
+                <NewDanceLogo className="h-15 sm:h-18 md:h-22 w-auto max-w-[380px] sm:max-w-[500px] md:max-w-[620px] filter drop-shadow-[0_2px_14px_rgba(234,179,8,0.3)] group-hover:scale-[1.03] transition-transform" lightTheme={false} />
               </div>
             )}
-            <div>
-              <span className="font-display text-lg font-black tracking-widest text-white uppercase block leading-none">
-                NEW DANCE <span className="text-gold-500">SYSTEM</span>
-              </span>
-              <span className="text-[9px] text-zinc-500 tracking-wider uppercase font-mono block mt-1">
-                Academia Premium de Baile
-              </span>
-            </div>
           </div>
 
           {/* Desktop Right Info bar - Current Date/Time + Admin identity */}
@@ -808,22 +1067,42 @@ export default function App() {
               </span>
             </div>
 
-            {/* Admin Tag */}
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-full bg-gold-950 flex items-center justify-center border border-gold-900">
-                <UserCircle className="h-4.5 w-4.5 text-gold-500" />
+            {/* Current Logged In User Identity */}
+            <div className="flex items-center gap-2 rounded-xl bg-zinc-900/80 px-3 py-1.5 border border-zinc-800">
+              <div className="h-7 w-7 rounded-lg bg-gold-500/20 flex items-center justify-center border border-gold-500/40 text-gold-400 font-extrabold text-xs">
+                {currentUser?.nombre?.charAt(0).toUpperCase() || 'U'}
               </div>
               <div>
-                <span className="text-white font-semibold block text-[11px] leading-tight">Admin NDS</span>
-                <span className="text-[9px] text-emerald-400 font-mono block leading-tight">En Línea • Local</span>
+                <span className="text-white font-bold block text-[11px] leading-tight">
+                  {currentUser?.nombre || 'Usuario NDS'}
+                </span>
+                <span className="text-[10px] text-gold-400 font-mono block leading-tight">
+                  @{currentUser?.username || 'admin'} • {currentUser?.cargo || 'Director'}
+                </span>
               </div>
             </div>
+
+            {/* Quick link to Users module if allowed */}
+            {hasPermission('users') && (
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 border text-[11px] font-semibold transition-all cursor-pointer ${
+                  activeTab === 'users'
+                    ? 'bg-gold-500 text-zinc-950 border-gold-400 font-bold'
+                    : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-gold-500/50 hover:text-gold-400'
+                }`}
+                title="Gestión de Usuarios y Permisos"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-gold-500" />
+                <span>Usuarios</span>
+              </button>
+            )}
 
             {/* Logout Trigger button */}
             <button
               id="btn-logout-desktop"
               onClick={handleLogout}
-              className="flex items-center gap-1.5 rounded-full bg-zinc-900 hover:bg-rose-950/20 text-zinc-400 hover:text-rose-455 px-3 py-1.5 border border-zinc-850 hover:border-rose-900/40 transition-all cursor-pointer font-semibold text-[11px]"
+              className="flex items-center gap-1.5 rounded-full bg-zinc-900 hover:bg-rose-950/20 text-zinc-400 hover:text-rose-400 px-3 py-1.5 border border-zinc-800 hover:border-rose-900/40 transition-all cursor-pointer font-semibold text-[11px]"
               title="Cerrar Sesión"
             >
               <LogOut className="h-3.5 w-3.5 text-rose-500" />
@@ -854,145 +1133,230 @@ export default function App() {
             <nav className="space-y-1.5">
               
               {/* Dashboard Tab */}
-              <button
-                id="tab-dashboard"
-                onClick={() => setActiveTab('dashboard')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'dashboard'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <LayoutDashboard className="h-4 w-4 shrink-0 text-white" />
-                <span className="text-white">Tablero Principal</span>
-              </button>
+              {hasPermission('dashboard') && (
+                <button
+                  id="tab-dashboard"
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'dashboard'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <LayoutDashboard className="h-4 w-4 shrink-0 text-white" />
+                  <span className="text-white">Tablero Principal</span>
+                </button>
+              )}
 
               {/* Alumnos / Inscripciones Tab */}
-              <button
-                id="tab-students"
-                onClick={() => setActiveTab('students')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'students'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <Users className="h-4 w-4 shrink-0 text-white" />
-                <span className="text-white">Inscripciones</span>
-              </button>
+              {hasPermission('students') && (
+                <button
+                  id="tab-students"
+                  onClick={() => setActiveTab('students')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'students'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <Users className="h-4 w-4 shrink-0 text-white" />
+                  <span className="text-white">Inscripciones</span>
+                </button>
+              )}
 
               {/* Horarios Tab */}
-              <button
-                id="tab-classes"
-                onClick={() => setActiveTab('classes')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'classes'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <CalendarDays className="h-4 w-4 shrink-0 text-white" />
-                <span className="text-white">Horarios Clases</span>
-              </button>
+              {hasPermission('classes') && (
+                <button
+                  id="tab-classes"
+                  onClick={() => setActiveTab('classes')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'classes'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <CalendarDays className="h-4 w-4 shrink-0 text-white" />
+                  <span className="text-white">Horarios Clases</span>
+                </button>
+              )}
+
+              {/* Actividades / Talleres Tab */}
+              {hasPermission('activities') && (
+                <button
+                  id="tab-activities"
+                  onClick={() => setActiveTab('activities')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'activities'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <Compass className="h-4 w-4 shrink-0 text-gold-400" />
+                  <span className="text-white">Actividades / Talleres</span>
+                </button>
+              )}
+
+              {/* Renta de Salones Tab */}
+              {hasPermission('rentals') && (
+                <button
+                  id="tab-rentals"
+                  onClick={() => setActiveTab('rentals')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'rentals'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <Building2 className="h-4 w-4 shrink-0 text-gold-400" />
+                  <span className="text-white">Renta de Salones</span>
+                </button>
+              )}
 
               {/* Pagos Tab */}
-              <button
-                id="tab-payments"
-                onClick={() => setActiveTab('payments')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'payments'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <DollarSign className="h-4 w-4 shrink-0 text-white" />
-                <span className="text-white">Gestión de Pagos</span>
-              </button>
+              {hasPermission('payments') && (
+                <button
+                  id="tab-payments"
+                  onClick={() => setActiveTab('payments')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'payments'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <DollarSign className="h-4 w-4 shrink-0 text-white" />
+                  <span className="text-white">Gestión de Pagos</span>
+                </button>
+              )}
 
               {/* Asistencia Tab */}
-              <button
-                id="tab-attendance"
-                onClick={() => setActiveTab('attendance')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'attendance'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <CheckSquare className="h-4 w-4 shrink-0 text-white" />
-                <span className="text-white">Asistencia Diaria</span>
-              </button>
+              {hasPermission('attendance') && (
+                <button
+                  id="tab-attendance"
+                  onClick={() => setActiveTab('attendance')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'attendance'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <CheckSquare className="h-4 w-4 shrink-0 text-white" />
+                  <span className="text-white">Asistencia Diaria</span>
+                </button>
+              )}
 
               {/* Personal de Trabajo Tab */}
-              <button
-                id="tab-staff"
-                onClick={() => setActiveTab('staff')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'staff'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <Briefcase className="h-4 w-4 shrink-0 text-white" />
-                <span className="text-white">Personal de Trabajo</span>
-              </button>
+              {hasPermission('staff') && (
+                <button
+                  id="tab-staff"
+                  onClick={() => setActiveTab('staff')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'staff'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <Briefcase className="h-4 w-4 shrink-0 text-white" />
+                  <span className="text-white">Personal de Trabajo</span>
+                </button>
+              )}
 
               {/* Tienda Aura / Facturación POS Tab */}
-              <button
-                id="tab-billing"
-                onClick={() => setActiveTab('billing')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'billing'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-emerald-555 pl-3 shadow-lg shadow-emerald-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <Store className="h-4 w-4 shrink-0 text-emerald-400" />
-                <span className="text-white">Facturación / Tienda</span>
-              </button>
+              {hasPermission('billing') && (
+                <button
+                  id="tab-billing"
+                  onClick={() => setActiveTab('billing')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'billing'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-emerald-500 pl-3 shadow-lg shadow-emerald-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <Store className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <span className="text-white">Facturación / Tienda</span>
+                </button>
+              )}
 
               {/* Ingresos Tab */}
-              <button
-                id="tab-incomes"
-                onClick={() => setActiveTab('incomes')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'incomes'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-emerald-500 pl-3 shadow-lg shadow-emerald-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <TrendingUp className="h-4 w-4 shrink-0 text-emerald-500" />
-                <span className="text-white">Ingresos</span>
-              </button>
+              {hasPermission('incomes') && (
+                <button
+                  id="tab-incomes"
+                  onClick={() => setActiveTab('incomes')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'incomes'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-emerald-500 pl-3 shadow-lg shadow-emerald-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <TrendingUp className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <span className="text-white">Ingresos</span>
+                </button>
+              )}
 
               {/* Egresos Tab */}
-              <button
-                id="tab-expenses"
-                onClick={() => setActiveTab('expenses')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'expenses'
-                    ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-rose-500 pl-3 shadow-lg shadow-rose-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <TrendingDown className="h-4 w-4 shrink-0 text-rose-500" />
-                <span className="text-white">Egresos</span>
-              </button>
+              {hasPermission('expenses') && (
+                <button
+                  id="tab-expenses"
+                  onClick={() => setActiveTab('expenses')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'expenses'
+                      ? 'bg-zinc-900 text-white font-extrabold border-l-4 border-rose-500 pl-3 shadow-lg shadow-rose-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <TrendingDown className="h-4 w-4 shrink-0 text-rose-500" />
+                  <span className="text-white">Egresos</span>
+                </button>
+              )}
+
+              {/* Corte de Caja Tab */}
+              {hasPermission('corte_caja') && (
+                <button
+                  id="tab-corte-caja"
+                  onClick={() => setActiveTab('corte_caja')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'corte_caja'
+                      ? 'bg-zinc-900 text-gold-400 font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <Calculator className="h-4 w-4 shrink-0 text-gold-500" />
+                  <span className="text-white">Corte de Caja</span>
+                </button>
+              )}
+
+              {/* Usuarios y Permisos Tab */}
+              {hasPermission('users') && (
+                <button
+                  id="tab-users"
+                  onClick={() => setActiveTab('users')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'users'
+                      ? 'bg-zinc-900 text-gold-400 font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-gold-400" />
+                  <span className="text-white">Control de Usuarios</span>
+                </button>
+              )}
 
               {/* Ajustes Generales Tab */}
-              <button
-                id="tab-config"
-                onClick={() => setActiveTab('config')}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === 'config'
-                    ? 'bg-zinc-900 text-gold-500 font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
-                    : 'text-white hover:bg-zinc-900/60'
-                }`}
-              >
-                <Settings className="h-4 w-4 shrink-0 text-gold-500" />
-                <span className="text-white">Ajustes / Facturas</span>
-              </button>
+              {hasPermission('config') && (
+                <button
+                  id="tab-config"
+                  onClick={() => setActiveTab('config')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                    activeTab === 'config'
+                      ? 'bg-zinc-900 text-gold-500 font-extrabold border-l-4 border-gold-500 pl-3 shadow-lg shadow-gold-500/10'
+                      : 'text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <Settings className="h-4 w-4 shrink-0 text-gold-500" />
+                  <span className="text-white">Ajustes / Facturas</span>
+                </button>
+              )}
             </nav>
+
 
             {/* Factory utilities block */}
             <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-4 space-y-4 pt-5">
@@ -1032,105 +1396,173 @@ export default function App() {
                 <span className="text-xs uppercase tracking-widest font-mono text-gold-500 block">Menú Administrativo</span>
                 
                 <nav className="space-y-3">
-                  <button
-                    onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'dashboard' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <LayoutDashboard className="h-5 w-5 text-white" />
-                    <span className="text-white">Tablero Principal</span>
-                  </button>
+                  {hasPermission('dashboard') && (
+                    <button
+                      onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'dashboard' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <LayoutDashboard className="h-5 w-5 text-white" />
+                      <span className="text-white">Tablero Principal</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('students'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'students' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <Users className="h-5 w-5 text-white" />
-                    <span className="text-white">Inscripciones</span>
-                  </button>
+                  {hasPermission('students') && (
+                    <button
+                      onClick={() => { setActiveTab('students'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'students' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <Users className="h-5 w-5 text-white" />
+                      <span className="text-white">Inscripciones</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('classes'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'classes' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <CalendarDays className="h-5 w-5 text-white" />
-                    <span className="text-white">Horarios Clases</span>
-                  </button>
+                  {hasPermission('classes') && (
+                    <button
+                      onClick={() => { setActiveTab('classes'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'classes' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <CalendarDays className="h-5 w-5 text-white" />
+                      <span className="text-white">Horarios Clases</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('payments'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'payments' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <DollarSign className="h-5 w-5 text-white" />
-                    <span className="text-white">Gestión de Pagos</span>
-                  </button>
+                  {hasPermission('activities') && (
+                    <button
+                      onClick={() => { setActiveTab('activities'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'activities' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <Compass className="h-5 w-5 text-gold-400" />
+                      <span className="text-white">Actividades / Talleres</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('attendance'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'attendance' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <CheckSquare className="h-5 w-5 text-white" />
-                    <span className="text-white">Asistencia Diaria</span>
-                  </button>
+                  {hasPermission('rentals') && (
+                    <button
+                      onClick={() => { setActiveTab('rentals'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'rentals' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <Building2 className="h-5 w-5 text-gold-400" />
+                      <span className="text-white">Renta de Salones</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('staff'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'staff' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <Briefcase className="h-5 w-5 text-white" />
-                    <span className="text-white">Personal de Trabajo</span>
-                  </button>
+                  {hasPermission('payments') && (
+                    <button
+                      onClick={() => { setActiveTab('payments'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'payments' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <DollarSign className="h-5 w-5 text-white" />
+                      <span className="text-white">Gestión de Pagos</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('billing'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'billing' ? 'bg-zinc-900 text-white border-l-4 border-emerald-555 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <Store className="h-5 w-5 text-emerald-450" />
-                    <span className="text-white">Facturación / Tienda</span>
-                  </button>
+                  {hasPermission('attendance') && (
+                    <button
+                      onClick={() => { setActiveTab('attendance'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'attendance' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <CheckSquare className="h-5 w-5 text-white" />
+                      <span className="text-white">Asistencia Diaria</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('incomes'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'incomes' ? 'bg-zinc-900 text-white border-l-4 border-emerald-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <TrendingUp className="h-5 w-5 text-emerald-500" />
-                    <span className="text-white">Ingresos</span>
-                  </button>
+                  {hasPermission('staff') && (
+                    <button
+                      onClick={() => { setActiveTab('staff'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'staff' ? 'bg-zinc-900 text-white border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <Briefcase className="h-5 w-5 text-white" />
+                      <span className="text-white">Personal de Trabajo</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('expenses'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'expenses' ? 'bg-zinc-900 text-white border-l-4 border-rose-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <TrendingDown className="h-5 w-5 text-rose-500" />
-                    <span className="text-white">Egresos</span>
-                  </button>
+                  {hasPermission('billing') && (
+                    <button
+                      onClick={() => { setActiveTab('billing'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'billing' ? 'bg-zinc-900 text-white border-l-4 border-emerald-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <Store className="h-5 w-5 text-emerald-400" />
+                      <span className="text-white">Facturación / Tienda</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => { setActiveTab('config'); setMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
-                      activeTab === 'config' ? 'bg-zinc-900 text-gold-505 border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <Settings className="h-5 w-5 text-gold-500" />
-                    <span className="text-white">Ajustes / Facturas</span>
-                  </button>
+                  {hasPermission('incomes') && (
+                    <button
+                      onClick={() => { setActiveTab('incomes'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'incomes' ? 'bg-zinc-900 text-white border-l-4 border-emerald-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <TrendingUp className="h-5 w-5 text-emerald-500" />
+                      <span className="text-white">Ingresos</span>
+                    </button>
+                  )}
+
+                  {hasPermission('expenses') && (
+                    <button
+                      onClick={() => { setActiveTab('expenses'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'expenses' ? 'bg-zinc-900 text-white border-l-4 border-rose-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <TrendingDown className="h-5 w-5 text-rose-500" />
+                      <span className="text-white">Egresos</span>
+                    </button>
+                  )}
+
+                  {hasPermission('corte_caja') && (
+                    <button
+                      onClick={() => { setActiveTab('corte_caja'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'corte_caja' ? 'bg-zinc-900 text-gold-500 border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <Calculator className="h-5 w-5 text-gold-500" />
+                      <span className="text-white">Corte de Caja</span>
+                    </button>
+                  )}
+
+                  {hasPermission('users') && (
+                    <button
+                      onClick={() => { setActiveTab('users'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'users' ? 'bg-zinc-900 text-gold-500 border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <ShieldCheck className="h-5 w-5 text-gold-400" />
+                      <span className="text-white">Control de Usuarios</span>
+                    </button>
+                  )}
+
+                  {hasPermission('config') && (
+                    <button
+                      onClick={() => { setActiveTab('config'); setMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold ${
+                        activeTab === 'config' ? 'bg-zinc-900 text-gold-500 border-l-4 border-gold-500 pl-3 font-extrabold' : 'text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <Settings className="h-5 w-5 text-gold-500" />
+                      <span className="text-white">Ajustes / Facturas</span>
+                    </button>
+                  )}
                 </nav>
               </div>
 
@@ -1193,6 +1625,31 @@ export default function App() {
               />
             )}
 
+            {activeTab === 'activities' && (
+              <ActivityModule
+                actividades={actividades}
+                alumnos={alumnos}
+                ticketSettings={ticketSettings}
+                onAddActivity={handleAddActivity}
+                onUpdateActivity={handleUpdateActivity}
+                onDeleteActivity={handleDeleteActivity}
+                onAddInscripcion={handleAddInscripcion}
+                onDeleteInscripcion={handleDeleteInscripcion}
+                onAddIngreso={handleAddIncome}
+              />
+            )}
+
+            {activeTab === 'rentals' && (
+              <RentalModule
+                salones={salones}
+                setSalones={setSalones}
+                rentas={rentas}
+                setRentas={setRentas}
+                ingresos={ingresos}
+                setIngresos={setIngresos}
+              />
+            )}
+
             {activeTab === 'payments' && (
               <PaymentModule
                 pagos={pagos}
@@ -1216,6 +1673,10 @@ export default function App() {
               <StaffModule
                 areas={areas}
                 empleados={empleados}
+                suplencias={suplencias}
+                clases={clases}
+                alumnos={alumnos}
+                ticketSettings={ticketSettings}
                 onAddArea={handleAddArea}
                 onUpdateArea={handleUpdateArea}
                 onDeleteArea={handleDeleteArea}
@@ -1223,6 +1684,10 @@ export default function App() {
                 onUpdateEmployee={handleUpdateEmployee}
                 onDeleteEmployee={handleDeleteEmployee}
                 onToggleEmployeeStatus={handleToggleEmployeeStatus}
+                onAddSuplencia={handleAddSuplencia}
+                onUpdateSuplencia={handleUpdateSuplencia}
+                onDeleteSuplencia={handleDeleteSuplencia}
+                onAddEgreso={handleAddExpense}
               />
             )}
 
@@ -1242,6 +1707,19 @@ export default function App() {
                 empleados={empleados}
                 onAddExpense={handleAddExpense}
                 onDeleteExpense={handleDeleteExpense}
+              />
+            )}
+
+            {activeTab === 'corte_caja' && (
+              <CashRegisterModule
+                cortes={cortes}
+                setCortes={saveCortes}
+                ingresos={ingresos}
+                egresos={egresos}
+                sales={sales}
+                pagos={pagos}
+                rentas={rentas}
+                ticketSettings={ticketSettings}
               />
             )}
 
@@ -1273,6 +1751,15 @@ export default function App() {
                   localStorage.setItem('aura_billing_settings', JSON.stringify(newSettings));
                 }}
                 showAlert={showAlert}
+              />
+            )}
+
+            {activeTab === 'users' && (
+              <UsersModule
+                usuarios={usuarios}
+                currentUser={currentUser}
+                onSaveUsuarios={saveUsuarios}
+                onSwitchUser={handleSwitchUser}
               />
             )}
 

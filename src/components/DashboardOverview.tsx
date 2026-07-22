@@ -13,7 +13,8 @@ import {
   Clock, 
   PlusCircle, 
   CheckSquare, 
-  AlertCircle 
+  AlertCircle,
+  Compass
 } from 'lucide-react';
 
 interface DashboardOverviewProps {
@@ -70,23 +71,12 @@ export default function DashboardOverview({
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Academy Branding Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-8 md:p-12 gold-glow">
+      {/* Academy Quick Actions Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-6 md:p-8 gold-glow">
         <div className="absolute top-0 right-0 h-40 w-45 bg-[#d4af37]/5 blur-[80px] rounded-full"></div>
-        <div className="relative z-10 max-w-2xl">
-          <span className="inline-flex items-center rounded-full bg-gold-950 px-3 py-1 text-xs font-semibold tracking-wide text-gold-400 border border-gold-900/40">
-            ★ Portal Administrativo Local
-          </span>
-          <h1 className="mt-4 font-display text-4xl font-extrabold tracking-tight text-white md:text-5xl">
-            Aura <span className="text-gold-500">Premium</span> Academy
-          </h1>
-          <p className="mt-3 text-base text-zinc-400 font-sans leading-relaxed">
-            Bienvenido al sistema de administración integrado. Gestione inscripciones, supervise los horarios de baile, registre pagos mensuales de estudiantes y controle la asistencia diaria en un solo panel de alto rendimiento.
-          </p>
-        </div>
         
         {/* Quick actions row */}
-        <div className="relative z-10 mt-8 flex flex-wrap gap-3">
+        <div className="relative z-10 flex flex-wrap gap-3">
           <button 
             id="btn-quick-enroll"
             onClick={onQuickAddStudent}
@@ -112,6 +102,15 @@ export default function DashboardOverview({
           >
             <DollarSign className="h-4.5 w-4.5 text-gold-500" />
             Registrar Pagos
+          </button>
+
+          <button 
+            id="btn-quick-activities"
+            onClick={() => onNavigate('activities')}
+            className="inline-flex items-center gap-2 rounded-xl border border-gold-500/30 bg-gold-500/10 px-5 py-2.5 text-sm font-semibold text-gold-400 transition-all hover:bg-gold-500/20 hover:border-gold-500/60 hover:scale-[1.02] cursor-pointer"
+          >
+            <Compass className="h-4.5 w-4.5 text-gold-400" />
+            Actividades y Tour
           </button>
         </div>
       </div>

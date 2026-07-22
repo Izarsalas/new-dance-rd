@@ -78,11 +78,27 @@ export default function ExpenseModule({
 
   // Quick Payroll autofill trigger helper
   const handleAutofillPayroll = (emp: Empleado) => {
-    setNewConcepto(`Pago de Nómina - ${emp.nombre} (${emp.puesto})`);
-    setNewMonto(emp.salario || 15000);
+    let montoEstimado = emp.salario || 0;
+    let descripcionConcepto = `Pago de Nómina - ${emp.nombre} (${emp.puesto})`;
+    let obs = `Empleado ID: ${emp.id}. `;
+
+    if (emp.tipoPago === 'Por Alumno' || (!emp.tipoPago && emp.pagoPorAlumno && !emp.salario)) {
+      descripcionConcepto = `Honorarios por Alumnos - ${emp.nombre} (${emp.puesto})`;
+      montoEstimado = (emp.pagoPorAlumno || 0) * 10; // Estimación sugerida
+      obs += `Esquema: Por Alumno (RD$ ${emp.pagoPorAlumno || 0} / Alumno). Ajuste el monto final según la matrícula activa.`;
+    } else if (emp.tipoPago === 'Mixto') {
+      descripcionConcepto = `Pago Mixto (Sueldo Base + Alumnos) - ${emp.nombre}`;
+      montoEstimado = (emp.salario || 0) + ((emp.pagoPorAlumno || 0) * 5);
+      obs += `Esquema Mixto: Base RD$ ${emp.salario || 0} + RD$ ${emp.pagoPorAlumno || 0} por alumno.`;
+    } else {
+      obs += `Esquema: Sueldo Fijo Mensual.`;
+    }
+
+    setNewConcepto(descripcionConcepto);
+    setNewMonto(montoEstimado || 15000);
     setNewCategoria('Nómina');
     setNewMetodo('Transferencia');
-    setNewObservacion(`Pago correspondiente a haberes mensuales. Empleado ID: ${emp.id}`);
+    setNewObservacion(obs);
   };
 
   // Filter expenses

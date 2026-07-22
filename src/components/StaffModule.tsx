@@ -4,7 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { AreaTrabajo, Empleado } from '../types';
+import { AreaTrabajo, Empleado, RegistroSuplencia, Clase, Alumno, TicketSettings, HorarioEmpleado } from '../types';
+import SubstitutionModule from './SubstitutionModule';
 import { 
   PlusCircle, 
   Search, 
@@ -23,13 +24,21 @@ import {
   FolderPlus,
   ArrowRightLeft,
   User,
-  Camera
+  Camera,
+  Clock,
+  Users,
+  CheckCircle,
+  Plus
 } from 'lucide-react';
 import { useAlertConfirm } from '../context/AlertConfirmContext';
 
 interface StaffModuleProps {
   areas: AreaTrabajo[];
   empleados: Empleado[];
+  suplencias?: RegistroSuplencia[];
+  clases?: Clase[];
+  alumnos?: Alumno[];
+  ticketSettings?: TicketSettings;
   onAddArea: (area: Omit<AreaTrabajo, 'id'>) => void;
   onUpdateArea: (area: AreaTrabajo) => void;
   onDeleteArea: (id: string) => void;
@@ -37,22 +46,34 @@ interface StaffModuleProps {
   onUpdateEmployee: (employee: Empleado) => void;
   onDeleteEmployee: (id: string) => void;
   onToggleEmployeeStatus: (id: string) => void;
+  onAddSuplencia?: (suplencia: Omit<RegistroSuplencia, 'id'>) => void;
+  onUpdateSuplencia?: (suplencia: RegistroSuplencia) => void;
+  onDeleteSuplencia?: (id: string) => void;
+  onAddEgreso?: (egreso: { concepto: string; monto: number; fecha: string; metodoPago: 'Efectivo' | 'Transferencia' | 'Tarjeta'; categoria: 'Nómina'; observaciones?: string }) => void;
 }
 
 export default function StaffModule({
   areas,
   empleados,
+  suplencias = [],
+  clases = [],
+  alumnos = [],
+  ticketSettings = { nombreAcademia: 'NEW DANCE SYSTEM' },
   onAddArea,
   onUpdateArea,
   onDeleteArea,
   onAddEmployee,
   onUpdateEmployee,
   onDeleteEmployee,
-  onToggleEmployeeStatus
+  onToggleEmployeeStatus,
+  onAddSuplencia = () => {},
+  onUpdateSuplencia = () => {},
+  onDeleteSuplencia = () => {},
+  onAddEgreso
 }: StaffModuleProps) {
   const { showAlert, showConfirm } = useAlertConfirm();
   // Navigation within the module
-  const [subTab, setSubTab] = useState<'employees' | 'areas'>('employees');
+  const [subTab, setSubTab] = useState<'employees' | 'substitutions' | 'areas'>('employees');
 
   // Employee-specific state
   const [empSearch, setEmpSearch] = useState('');
@@ -69,7 +90,9 @@ export default function StaffModule({
   const [empNombre, setEmpNombre] = useState('');
   const [empAreaId, setEmpAreaId] = useState(areas[0]?.id || '');
   const [empPuesto, setEmpPuesto] = useState('');
-  const [empSalario, setEmpSalario] = useState(25000);
+  const [empTipoPago, setEmpTipoPago] = useState<'Por Alumno' | 'Sueldo Fijo' | 'Mixto'>('Por Alumno');
+  const [empPagoPorAlumno, setEmpPagoPorAlumno] = useState<number>(500);
+  const [empSalario, setEmpSalario] = useState<number>(0);
   const [empContacto, setEmpContacto] = useState('');
   const [empFechaIngreso, setEmpFechaIngreso] = useState(new Date().toISOString().substring(0, 10));
   const [empWhatsappPersonal, setEmpWhatsappPersonal] = useState('');
@@ -79,6 +102,85 @@ export default function StaffModule({
   const [empHorarioTrabajo, setEmpHorarioTrabajo] = useState('');
   const [empObservacion, setEmpObservacion] = useState('');
   const [empFoto, setEmpFoto] = useState('');
+
+  // Multiple Schedules States for Add Employee
+  const [empHorarios, setEmpHorarios] = useState<HorarioEmpleado[]>([]);
+  const [newSchedDia, setNewSchedDia] = useState<string>('Lunes');
+  const [newSchedEntrada, setNewSchedEntrada] = useState<string>('18:00');
+  const [newSchedSalida, setNewSchedSalida] = useState<string>('19:30');
+  const [newSchedObs, setNewSchedObs] = useState<string>('');
+
+  // Multiple Schedules States for Edit Employee
+  const [editSchedDia, setEditSchedDia] = useState<string>('Lunes');
+  const [editSchedEntrada, setEditSchedEntrada] = useState<string>('18:00');
+  const [editSchedSalida, setEditSchedSalida] = useState<string>('19:30');
+  const [editSchedObs, setEditSchedObs] = useState<string>('');
+
+  // Helper to generate text summary of schedules
+  const generateHorarioString = (horariosList?: HorarioEmpleado[]) => {
+    if (!horariosList || horariosList.length === 0) return '';
+    return horariosList.map(h => `${h.dia.substring(0, 3)} ${h.horaEntrada}-${h.horaSalida}`).join(', ');
+  };
+
+  // Schedule management for Add Employee
+  const handleAddScheduleToAddEmp = () => {
+    if (!newSchedEntrada || !newSchedSalida) {
+      showAlert('Por favor especifique la hora de entrada y salida.', 'Horario Incompleto');
+      return;
+    }
+    const entry: HorarioEmpleado = {
+      id: 'sch_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      dia: newSchedDia,
+      horaEntrada: newSchedEntrada,
+      horaSalida: newSchedSalida,
+      observacion: newSchedObs.trim() || undefined
+    };
+    const updated = [...empHorarios, entry];
+    setEmpHorarios(updated);
+    setEmpHorarioTrabajo(generateHorarioString(updated));
+    setNewSchedObs('');
+  };
+
+  const handleRemoveScheduleFromAddEmp = (id: string) => {
+    const updated = empHorarios.filter(h => h.id !== id);
+    setEmpHorarios(updated);
+    setEmpHorarioTrabajo(generateHorarioString(updated));
+  };
+
+  // Schedule management for Edit Employee
+  const handleAddScheduleToEditEmp = () => {
+    if (!editingEmp) return;
+    if (!editSchedEntrada || !editSchedSalida) {
+      showAlert('Por favor especifique la hora de entrada y salida.', 'Horario Incompleto');
+      return;
+    }
+    const entry: HorarioEmpleado = {
+      id: 'sch_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      dia: editSchedDia,
+      horaEntrada: editSchedEntrada,
+      horaSalida: editSchedSalida,
+      observacion: editSchedObs.trim() || undefined
+    };
+    const current = editingEmp.horarios || [];
+    const updated = [...current, entry];
+    setEditingEmp({
+      ...editingEmp,
+      horarios: updated,
+      horarioTrabajo: generateHorarioString(updated)
+    });
+    setEditSchedObs('');
+  };
+
+  const handleRemoveScheduleFromEditEmp = (id: string) => {
+    if (!editingEmp) return;
+    const current = editingEmp.horarios || [];
+    const updated = current.filter(h => h.id !== id);
+    setEditingEmp({
+      ...editingEmp,
+      horarios: updated,
+      horarioTrabajo: generateHorarioString(updated)
+    });
+  };
 
   // Handle image load to base64
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, isEditing: boolean) => {
@@ -118,7 +220,9 @@ export default function StaffModule({
       nombre: empNombre.trim(),
       areaId: empAreaId,
       puesto: empPuesto.trim(),
-      salario: Number(empSalario) || 0,
+      tipoPago: empTipoPago,
+      pagoPorAlumno: (empTipoPago === 'Por Alumno' || empTipoPago === 'Mixto') ? Number(empPagoPorAlumno) || 0 : 0,
+      salario: (empTipoPago === 'Sueldo Fijo' || empTipoPago === 'Mixto') ? Number(empSalario) || 0 : 0,
       contacto: empWhatsappPersonal.trim() || empContacto.trim() || 'Sin contacto',
       fechaIngreso: empFechaIngreso,
       activo: true,
@@ -126,7 +230,8 @@ export default function StaffModule({
       whatsappFamiliar: empWhatsappFamiliar.trim(),
       nombreFamiliar: empNombreFamiliar.trim(),
       direccion: empDireccion.trim(),
-      horarioTrabajo: empHorarioTrabajo.trim(),
+      horarios: empHorarios,
+      horarioTrabajo: generateHorarioString(empHorarios) || empHorarioTrabajo.trim(),
       observacion: empObservacion.trim(),
       foto: empFoto || undefined
     });
@@ -134,7 +239,10 @@ export default function StaffModule({
     // Reset Form
     setEmpNombre('');
     setEmpPuesto('');
-    setEmpSalario(25000);
+    setEmpTipoPago('Por Alumno');
+    setEmpPagoPorAlumno(500);
+    setEmpSalario(0);
+    setEmpHorarios([]);
     setEmpContacto('');
     setEmpFechaIngreso(new Date().toISOString().substring(0, 10));
     setEmpWhatsappPersonal('');
@@ -154,7 +262,14 @@ export default function StaffModule({
         await showAlert('Por favor complete los campos obligatorios.', 'Campos Requeridos');
         return;
       }
-      onUpdateEmployee(editingEmp);
+      
+      const finalHorarios = editingEmp.horarios || [];
+      const updatedEmp: Empleado = {
+        ...editingEmp,
+        horarioTrabajo: generateHorarioString(finalHorarios) || editingEmp.horarioTrabajo || ''
+      };
+
+      onUpdateEmployee(updatedEmp);
       setEditingEmp(null);
     }
   };
@@ -339,11 +454,11 @@ export default function StaffModule({
 
       </div>
 
-      {/* Tabs navigation for Employees vs. Areas */}
-      <div className="flex border-b border-zinc-900">
+      {/* Tabs navigation for Employees vs. Substitutions vs. Areas */}
+      <div className="flex border-b border-zinc-900 overflow-x-auto">
         <button
           onClick={() => setSubTab('employees')}
-          className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             subTab === 'employees'
               ? 'border-gold-500 text-white font-bold'
               : 'border-transparent text-zinc-500 hover:text-zinc-300'
@@ -352,8 +467,20 @@ export default function StaffModule({
           Directorio de Empleados ({filteredEmployees.length})
         </button>
         <button
+          id="subtab-substitutions"
+          onClick={() => setSubTab('substitutions')}
+          className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            subTab === 'substitutions'
+              ? 'border-gold-500 text-white font-bold'
+              : 'border-transparent text-zinc-500 hover:text-zinc-300'
+          }`}
+        >
+          <ArrowRightLeft className="h-4 w-4 text-gold-500" />
+          <span>Profesores Suplentes y Suplencias ({suplencias.length})</span>
+        </button>
+        <button
           onClick={() => setSubTab('areas')}
-          className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             subTab === 'areas'
               ? 'border-gold-500 text-white font-bold'
               : 'border-transparent text-zinc-500 hover:text-zinc-300'
@@ -362,6 +489,21 @@ export default function StaffModule({
           Áreas y Departamentos ({totalAreasCount})
         </button>
       </div>
+
+      {/* RENDER SUBSTITUTIONS MODULE */}
+      {subTab === 'substitutions' && (
+        <SubstitutionModule
+          suplencias={suplencias}
+          empleados={empleados}
+          clases={clases}
+          alumnos={alumnos}
+          ticketSettings={ticketSettings}
+          onAddSuplencia={onAddSuplencia}
+          onUpdateSuplencia={onUpdateSuplencia}
+          onDeleteSuplencia={onDeleteSuplencia}
+          onAddEgreso={onAddEgreso}
+        />
+      )}
 
       {/* RENDER EMPLOYEES DIRECTORY */}
       {subTab === 'employees' && (
@@ -445,7 +587,7 @@ export default function StaffModule({
                       <th className="py-3 px-4">Empleado & Puesto</th>
                       <th className="py-3 px-4">Departamento / Área</th>
                       <th className="py-3 px-4">Contacto</th>
-                      <th className="py-3 px-4">Salario Mensual</th>
+                      <th className="py-3 px-4">Esquema de Pago / Honorarios</th>
                       <th className="py-3 px-4">Fecha Ingreso</th>
                       <th className="py-3 px-4 text-center">Estado</th>
                       <th className="py-3 px-4 text-right">Acciones</th>
@@ -472,12 +614,31 @@ export default function StaffModule({
                             <div className="space-y-1 min-w-0">
                               <span className="font-semibold text-white block leading-tight">{emp.nombre}</span>
                               <span className="text-[10px] text-gold-500 font-bold font-mono tracking-wide block uppercase leading-none">{emp.puesto}</span>
-                              {emp.horarioTrabajo && (
+                              
+                              {/* Multiple Schedules List */}
+                              {emp.horarios && emp.horarios.length > 0 ? (
+                                <div className="mt-1.5 space-y-1">
+                                  <div className="text-[9px] text-gold-500/80 font-bold font-mono tracking-wider flex items-center gap-1 uppercase">
+                                    <Clock className="h-3 w-3 text-gold-500 shrink-0" />
+                                    <span>Horarios y Días ({emp.horarios.length}):</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 max-w-[280px]">
+                                    {emp.horarios.map((h) => (
+                                      <span key={h.id} className="inline-flex items-center gap-1 bg-zinc-900/80 border border-zinc-800 rounded px-1.5 py-0.5 text-[10px] text-stone-200 font-mono">
+                                        <span className="text-gold-400 font-bold">{h.dia.substring(0,3)}:</span>
+                                        <span>{h.horaEntrada}-{h.horaSalida}</span>
+                                        {h.observacion && <span className="text-zinc-500 text-[9px]">({h.observacion})</span>}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : emp.horarioTrabajo ? (
                                 <div className="text-[10px] text-stone-350 font-mono flex items-center gap-1 mt-1">
                                   <span className="text-gold-500/70">📅 Horario:</span>
                                   <span>{emp.horarioTrabajo}</span>
                                 </div>
-                              )}
+                              ) : null}
+
                               {emp.direccion && (
                                 <div className="text-[10px] text-stone-400 flex items-center gap-1">
                                   <span className="text-zinc-500 font-medium">📍 Dir:</span>
@@ -521,9 +682,29 @@ export default function StaffModule({
                           </div>
                         </td>
 
-                        {/* Monthly Salary */}
-                        <td className="py-4.5 px-4 font-semibold text-white font-mono text-xs">
-                          RD$ {emp.salario.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {/* Payment Scheme & Fees */}
+                        <td className="py-4.5 px-4 font-mono text-xs">
+                          {(!emp.tipoPago || emp.tipoPago === 'Por Alumno' || (emp.pagoPorAlumno && !emp.salario)) ? (
+                            <div className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 text-xs font-bold text-amber-400">
+                              <Users className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              <span>RD$ {(emp.pagoPorAlumno || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })} / Alumno</span>
+                            </div>
+                          ) : emp.tipoPago === 'Mixto' ? (
+                            <div className="space-y-1">
+                              <div className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 text-[11px] font-bold text-purple-300">
+                                <span>RD$ {(emp.salario || 0).toLocaleString('es-DO')} Base</span>
+                              </div>
+                              <div className="text-[10px] text-amber-400 font-mono font-semibold flex items-center gap-1">
+                                <Users className="h-3 w-3 text-amber-500" />
+                                <span>+ RD$ {(emp.pagoPorAlumno || 0).toLocaleString('es-DO')} / Alumno</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 text-xs font-bold text-emerald-400">
+                              <DollarSign className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                              <span>RD$ {(emp.salario || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })} / Mes</span>
+                            </div>
+                          )}
                         </td>
 
                         {/* Date hired */}
@@ -832,49 +1013,95 @@ export default function StaffModule({
                 </div>
               </div>
 
-              {/* SECTION 3: DIRECCIÓN Y HORARIOS */}
+              {/* SECTION 3: ESQUEMA DE PAGO Y HONORARIOS */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1">
-                  3. Ubicación, Horarios de Trabajo e Ingreso
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1 flex items-center justify-between">
+                  <span>3. Esquema de Pago y Honorarios</span>
+                  <span className="text-[10px] text-zinc-400 font-normal">Estipular cobro por alumno o fijo</span>
                 </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Dirección de Residencia</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Av. Independencia Esq. Pasteur, Calle #5"
-                      value={empDireccion}
-                      onChange={(e) => setEmpDireccion(e.target.value)}
-                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
-                    />
-                  </div>
+                {/* Tipo de Pago selector */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEmpTipoPago('Por Alumno')}
+                    className={`rounded-xl border p-2.5 text-center transition-all cursor-pointer ${
+                      empTipoPago === 'Por Alumno'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-300 font-bold'
+                        : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    <Users className="h-4 w-4 mx-auto mb-1 text-amber-500" />
+                    <span className="text-xs block">Por Alumno</span>
+                    <span className="text-[9px] font-normal text-zinc-500 block">Cobro estipulado / alumno</span>
+                  </button>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Horarios de Trabajo</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Lun a Vie de 2:00 PM a 10:00 PM"
-                      value={empHorarioTrabajo}
-                      onChange={(e) => setEmpHorarioTrabajo(e.target.value)}
-                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEmpTipoPago('Sueldo Fijo')}
+                    className={`rounded-xl border p-2.5 text-center transition-all cursor-pointer ${
+                      empTipoPago === 'Sueldo Fijo'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 font-bold'
+                        : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    <DollarSign className="h-4 w-4 mx-auto mb-1 text-emerald-500" />
+                    <span className="text-xs block">Sueldo Fijo</span>
+                    <span className="text-[9px] font-normal text-zinc-500 block">Sueldo mensual fijo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEmpTipoPago('Mixto')}
+                    className={`rounded-xl border p-2.5 text-center transition-all cursor-pointer ${
+                      empTipoPago === 'Mixto'
+                        ? 'border-purple-500 bg-purple-500/10 text-purple-300 font-bold'
+                        : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    <Sparkles className="h-4 w-4 mx-auto mb-1 text-purple-400" />
+                    <span className="text-xs block">Mixto</span>
+                    <span className="text-[9px] font-normal text-zinc-500 block">Base fija + por alumno</span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Salario Mensual (RD$)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="500"
-                      placeholder="25000"
-                      value={empSalario}
-                      onChange={(e) => setEmpSalario(Number(e.target.value))}
-                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  {(empTipoPago === 'Por Alumno' || empTipoPago === 'Mixto') && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-amber-400 mb-0.5 flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>Pago Estipulado por Alumno (RD$) *</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        placeholder="Ej. 500"
+                        value={empPagoPorAlumno}
+                        onChange={(e) => setEmpPagoPorAlumno(Number(e.target.value))}
+                        className="w-full rounded-lg border border-amber-500/40 bg-zinc-900/80 p-2.5 text-sm text-stone-100 outline-none focus:border-amber-500"
+                      />
+                      <span className="text-[10px] text-zinc-500 block mt-1">Monto que la academia pagará por cada alumno asignado a este empleado.</span>
+                    </div>
+                  )}
+
+                  {(empTipoPago === 'Sueldo Fijo' || empTipoPago === 'Mixto') && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-emerald-400 mb-0.5 flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" />
+                        <span>Sueldo Base Mensual (RD$) *</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="500"
+                        placeholder="25000"
+                        value={empSalario}
+                        onChange={(e) => setEmpSalario(Number(e.target.value))}
+                        className="w-full rounded-lg border border-emerald-500/40 bg-zinc-900/80 p-2.5 text-sm text-stone-100 outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Fecha de Ingreso</label>
@@ -885,10 +1112,128 @@ export default function StaffModule({
                       className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Dirección de Residencia</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Av. Independencia Esq. Pasteur, Calle #5"
+                      value={empDireccion}
+                      onChange={(e) => setEmpDireccion(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* SECTION 4: OBSERVACIONES */}
+              {/* SECTION 4: DÍAS Y HORARIOS DE TRABAJO ASIGNADOS */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-gold-500" />
+                    4. Asignación de Días y Horarios de Trabajo
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-normal">Múltiples días y horas</span>
+                </h4>
+
+                {/* Form to add schedule */}
+                <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-850 space-y-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Día *</label>
+                      <select
+                        value={newSchedDia}
+                        onChange={(e) => setNewSchedDia(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      >
+                        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Hora Entrada *</label>
+                      <input
+                        type="time"
+                        value={newSchedEntrada}
+                        onChange={(e) => setNewSchedEntrada(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Hora Salida *</label>
+                      <input
+                        type="time"
+                        value={newSchedSalida}
+                        onChange={(e) => setNewSchedSalida(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Detalle / Clase (Opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Salsa I"
+                        value={newSchedObs}
+                        onChange={(e) => setNewSchedObs(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={handleAddScheduleToAddEmp}
+                      className="inline-flex items-center gap-1.5 bg-gold-500/20 hover:bg-gold-500/30 border border-gold-500/40 text-gold-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-gold-500" />
+                      <span>+ Agregar Día u Horario</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Display added schedules */}
+                {empHorarios.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {empHorarios.map((h) => (
+                      <div key={h.id} className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-stone-200">
+                        <span className="font-bold text-gold-400">{h.dia}:</span>
+                        <span>{h.horaEntrada} a {h.horaSalida}</span>
+                        {h.observacion && <span className="text-zinc-500 text-[10px]">({h.observacion})</span>}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveScheduleFromAddEmp(h.id)}
+                          className="text-zinc-500 hover:text-rose-400 p-0.5 rounded transition-colors ml-1"
+                          title="Eliminar horario"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-zinc-500 italic bg-zinc-900/30 p-2.5 rounded-lg border border-zinc-900 text-center">
+                    No se han asignado horarios específicos aún. Puede agregar los días y horas arriba o ingresar un texto libre a continuación.
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Resumen de Horarios (Texto Libre u Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Lun a Vie de 6:00 PM a 9:30 PM"
+                    value={empHorarioTrabajo}
+                    onChange={(e) => setEmpHorarioTrabajo(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 5: OBSERVACIONES */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1">
                   4. Observación o Notas Adicionales
@@ -1078,48 +1423,95 @@ export default function StaffModule({
                 </div>
               </div>
 
-              {/* SECTION 3: DIRECCIÓN Y HORARIOS */}
+              {/* SECTION 3: ESQUEMA DE PAGO Y HONORARIOS */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1">
-                  3. Ubicación, Horarios de Trabajo e Ingreso
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1 flex items-center justify-between">
+                  <span>3. Esquema de Pago y Honorarios</span>
+                  <span className="text-[10px] text-zinc-400 font-normal">Estipular cobro por alumno o fijo</span>
                 </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Dirección de Residencia</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Av. Independencia Esq. Pasteur, Calle #5"
-                      value={editingEmp.direccion || ''}
-                      onChange={(e) => setEditingEmp({ ...editingEmp, direccion: e.target.value })}
-                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
-                    />
-                  </div>
+                {/* Tipo de Pago selector */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingEmp({ ...editingEmp, tipoPago: 'Por Alumno' })}
+                    className={`rounded-xl border p-2.5 text-center transition-all cursor-pointer ${
+                      (!editingEmp.tipoPago || editingEmp.tipoPago === 'Por Alumno')
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-300 font-bold'
+                        : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    <Users className="h-4 w-4 mx-auto mb-1 text-amber-500" />
+                    <span className="text-xs block">Por Alumno</span>
+                    <span className="text-[9px] font-normal text-zinc-500 block">Cobro estipulado / alumno</span>
+                  </button>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Horarios de Trabajo</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Lun a Vie de 2:00 PM a 10:00 PM"
-                      value={editingEmp.horarioTrabajo || ''}
-                      onChange={(e) => setEditingEmp({ ...editingEmp, horarioTrabajo: e.target.value })}
-                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingEmp({ ...editingEmp, tipoPago: 'Sueldo Fijo' })}
+                    className={`rounded-xl border p-2.5 text-center transition-all cursor-pointer ${
+                      editingEmp.tipoPago === 'Sueldo Fijo'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 font-bold'
+                        : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    <DollarSign className="h-4 w-4 mx-auto mb-1 text-emerald-500" />
+                    <span className="text-xs block">Sueldo Fijo</span>
+                    <span className="text-[9px] font-normal text-zinc-500 block">Sueldo mensual fijo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingEmp({ ...editingEmp, tipoPago: 'Mixto' })}
+                    className={`rounded-xl border p-2.5 text-center transition-all cursor-pointer ${
+                      editingEmp.tipoPago === 'Mixto'
+                        ? 'border-purple-500 bg-purple-500/10 text-purple-300 font-bold'
+                        : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    <Sparkles className="h-4 w-4 mx-auto mb-1 text-purple-400" />
+                    <span className="text-xs block">Mixto</span>
+                    <span className="text-[9px] font-normal text-zinc-500 block">Base fija + por alumno</span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Salario Mensual (RD$)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="500"
-                      value={editingEmp.salario || 0}
-                      onChange={(e) => setEditingEmp({ ...editingEmp, salario: Number(e.target.value) || 0 })}
-                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  {(!editingEmp.tipoPago || editingEmp.tipoPago === 'Por Alumno' || editingEmp.tipoPago === 'Mixto') && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-amber-400 mb-0.5 flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>Pago Estipulado por Alumno (RD$) *</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
+                        placeholder="Ej. 500"
+                        value={editingEmp.pagoPorAlumno || 0}
+                        onChange={(e) => setEditingEmp({ ...editingEmp, pagoPorAlumno: Number(e.target.value) || 0 })}
+                        className="w-full rounded-lg border border-amber-500/40 bg-zinc-900/80 p-2.5 text-sm text-stone-100 outline-none focus:border-amber-500"
+                      />
+                      <span className="text-[10px] text-zinc-500 block mt-1">Monto que la academia pagará por cada alumno asignado a este empleado.</span>
+                    </div>
+                  )}
+
+                  {(editingEmp.tipoPago === 'Sueldo Fijo' || editingEmp.tipoPago === 'Mixto') && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-emerald-400 mb-0.5 flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" />
+                        <span>Sueldo Base Mensual (RD$) *</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="500"
+                        placeholder="25000"
+                        value={editingEmp.salario || 0}
+                        onChange={(e) => setEditingEmp({ ...editingEmp, salario: Number(e.target.value) || 0 })}
+                        className="w-full rounded-lg border border-emerald-500/40 bg-zinc-900/80 p-2.5 text-sm text-stone-100 outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Fecha de Ingreso</label>
@@ -1130,10 +1522,128 @@ export default function StaffModule({
                       className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Dirección de Residencia</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Av. Independencia Esq. Pasteur, Calle #5"
+                      value={editingEmp.direccion || ''}
+                      onChange={(e) => setEditingEmp({ ...editingEmp, direccion: e.target.value })}
+                      className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* SECTION 4: OBSERVACIONES */}
+              {/* SECTION 4: DÍAS Y HORARIOS DE TRABAJO ASIGNADOS */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-gold-500" />
+                    4. Asignación de Días y Horarios de Trabajo
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-normal">Múltiples días y horas</span>
+                </h4>
+
+                {/* Form to add schedule */}
+                <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-850 space-y-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Día *</label>
+                      <select
+                        value={editSchedDia}
+                        onChange={(e) => setEditSchedDia(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      >
+                        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Hora Entrada *</label>
+                      <input
+                        type="time"
+                        value={editSchedEntrada}
+                        onChange={(e) => setEditSchedEntrada(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Hora Salida *</label>
+                      <input
+                        type="time"
+                        value={editSchedSalida}
+                        onChange={(e) => setEditSchedSalida(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 font-semibold mb-1">Detalle / Clase (Opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Bachata II"
+                        value={editSchedObs}
+                        onChange={(e) => setEditSchedObs(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={handleAddScheduleToEditEmp}
+                      className="inline-flex items-center gap-1.5 bg-gold-500/20 hover:bg-gold-500/30 border border-gold-500/40 text-gold-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-gold-500" />
+                      <span>+ Agregar Día u Horario</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Display added schedules */}
+                {editingEmp.horarios && editingEmp.horarios.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {editingEmp.horarios.map((h) => (
+                      <div key={h.id} className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-stone-200">
+                        <span className="font-bold text-gold-400">{h.dia}:</span>
+                        <span>{h.horaEntrada} a {h.horaSalida}</span>
+                        {h.observacion && <span className="text-zinc-500 text-[10px]">({h.observacion})</span>}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveScheduleFromEditEmp(h.id)}
+                          className="text-zinc-500 hover:text-rose-400 p-0.5 rounded transition-colors ml-1"
+                          title="Eliminar horario"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-zinc-500 italic bg-zinc-900/30 p-2.5 rounded-lg border border-zinc-900 text-center">
+                    No hay horarios específicos listados.
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-zinc-400 mb-0.5">Resumen de Horarios (Texto Libre u Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Lun a Vie de 6:00 PM a 9:30 PM"
+                    value={editingEmp.horarioTrabajo || ''}
+                    onChange={(e) => setEditingEmp({ ...editingEmp, horarioTrabajo: e.target.value })}
+                    className="w-full rounded-lg border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 5: OBSERVACIONES */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 border-b border-zinc-900 pb-1">
                   4. Observación o Notas Adicionales

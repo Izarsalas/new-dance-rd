@@ -49,6 +49,7 @@ export default function ProductsView({
   const [newPrecio, setNewPrecio] = useState(0);
   const [newCosto, setNewCosto] = useState(0);
   const [newStock, setNewStock] = useState(10);
+  const [newStockMinimo, setNewStockMinimo] = useState(3);
   const [newDept, setNewDept] = useState(departments[0] || 'Zapatos de Baile');
   const [newFoto, setNewFoto] = useState('');
 
@@ -105,6 +106,8 @@ export default function ProductsView({
       return;
     }
 
+    const minStockVal = Number(newStockMinimo) >= 0 ? Number(newStockMinimo) : 3;
+
     if (editingProduct) {
       // Edit mode
       const updated = products.map(p => {
@@ -116,6 +119,7 @@ export default function ProductsView({
             precio: Number(newPrecio) || 0,
             costo: Number(newCosto) || 0,
             stock: Number(newStock) || 0,
+            stockMinimo: minStockVal,
             departamento: newDept,
             foto: newFoto || undefined
           };
@@ -135,6 +139,7 @@ export default function ProductsView({
         precio: Number(newPrecio) || 0,
         costo: Number(newCosto) || 0,
         stock: Number(newStock) || 0,
+        stockMinimo: minStockVal,
         departamento: newDept,
         inventarioActivo: true,
         foto: newFoto || undefined
@@ -155,6 +160,7 @@ export default function ProductsView({
     setNewPrecio(0);
     setNewCosto(0);
     setNewStock(10);
+    setNewStockMinimo(3);
     setNewDept(departments[0] || '');
     setNewFoto('');
     setShowAddModal(false);
@@ -167,6 +173,7 @@ export default function ProductsView({
     setNewPrecio(p.precio);
     setNewCosto(p.costo || 0);
     setNewStock(p.stock);
+    setNewStockMinimo(p.stockMinimo !== undefined ? p.stockMinimo : 3);
     setNewDept(p.departamento);
     setNewFoto(p.foto || '');
     setShowAddModal(true);
@@ -230,7 +237,7 @@ export default function ProductsView({
             Catálogo de Productos y Danza
           </h2>
           <p className="text-xs text-zinc-300 mt-1">
-            Administre los artículos que vende la academia (vestuario, calzado, bebidas, etc.) y asigne precios y niveles de stock iniciales.
+            Administre los artículos que vende la academia (vestuario, calzado, bebidas, etc.) y asigne precios, stock y cantidad mínima de alerta.
           </p>
         </div>
 
@@ -242,6 +249,34 @@ export default function ProductsView({
           <span>Agregar Producto</span>
         </button>
       </div>
+
+      {/* RECORDATORIO DE STOCK MÍNIMO / ALERTA DE AGOTAMIENTO */}
+      {products.some(p => p.stock <= (p.stockMinimo !== undefined ? p.stockMinimo : 3)) && (
+        <div className="bg-amber-950/30 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in shadow-lg shadow-amber-950/10">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+              <AlertCircle className="h-5 w-5 text-amber-400 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wide flex items-center gap-2">
+                <span>⚠️ Alerta de Inventario: Productos por Agotarse</span>
+                <span className="bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-full font-mono text-[10px] font-black">
+                  {products.filter(p => p.stock <= (p.stockMinimo !== undefined ? p.stockMinimo : 3)).length}
+                </span>
+              </h4>
+              <p className="text-[11px] text-amber-200/90 mt-0.5">
+                Existen productos que han alcanzado o caído por debajo de su <strong>cantidad mínima configurada</strong>. Se sugiere realizar reabastecimiento pronto.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSearchTerm('')}
+            className="text-[10px] uppercase font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-xl hover:bg-amber-500/30 transition-all cursor-pointer shrink-0"
+          >
+            Ver Catálogo Completo
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
@@ -370,7 +405,8 @@ export default function ProductsView({
                     </tr>
                   ) : (
                     filteredProducts.map((p) => {
-                      const isLowStock = p.stock <= 3;
+                      const minStock = p.stockMinimo !== undefined ? p.stockMinimo : 3;
+                      const isLowStock = p.stock <= minStock;
                       return (
                         <tr key={p.id} className="hover:bg-zinc-900/10 transition-all">
                           {/* Code */}
@@ -388,7 +424,14 @@ export default function ProductsView({
                                   <Package className="h-4 w-4 text-zinc-400" />
                                 )}
                               </div>
-                              <span className="font-semibold text-white block text-xs">{p.nombre}</span>
+                              <div>
+                                <span className="font-semibold text-white block text-xs">{p.nombre}</span>
+                                {isLowStock && (
+                                  <span className="text-[9px] font-bold text-amber-400 bg-amber-950/40 border border-amber-900/40 px-1.5 py-0.2 rounded inline-block mt-0.5">
+                                    ⚠️ Stock Bajo (Mín: {minStock})
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </td>
 
@@ -411,14 +454,21 @@ export default function ProductsView({
 
                           {/* Stock */}
                           <td className="py-3.5 px-4 text-center">
-                            <span className={`inline-flex items-center gap-1 rounded font-mono px-2 py-0.5 font-bold text-[11px] ${
-                              isLowStock 
-                                ? 'bg-rose-950/20 text-rose-400 border border-rose-900/30' 
-                                : 'bg-emerald-950/20 text-emerald-400 border border-emerald-900/20'
-                            }`}>
-                              {p.stock} pzas
-                              {isLowStock && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />}
-                            </span>
+                            <div className="flex flex-col items-center">
+                              <span className={`inline-flex items-center gap-1 rounded font-mono px-2 py-0.5 font-bold text-[11px] ${
+                                p.stock === 0
+                                  ? 'bg-rose-950/30 text-rose-400 border border-rose-900/40'
+                                  : isLowStock 
+                                    ? 'bg-amber-950/30 text-amber-400 border border-amber-900/40' 
+                                    : 'bg-emerald-950/20 text-emerald-400 border border-emerald-900/20'
+                              }`}>
+                                {p.stock} pzas
+                                {isLowStock && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />}
+                              </span>
+                              <span className="text-[9px] text-zinc-500 font-mono mt-0.5">
+                                Mín: {minStock} pzas
+                              </span>
+                            </div>
                           </td>
 
                           {/* Actions */}
@@ -554,7 +604,7 @@ export default function ProductsView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">Costo RD$ *</label>
                   <input
@@ -580,7 +630,7 @@ export default function ProductsView({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 mb-1">Cantidad (Stock)</label>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">Stock Actual *</label>
                   <input
                     type="number"
                     min="0"
@@ -588,6 +638,21 @@ export default function ProductsView({
                     value={newStock}
                     onChange={(e) => setNewStock(Number(e.target.value) || 0)}
                     className="w-full rounded-xl border border-zinc-850 bg-zinc-900/60 p-2.5 text-sm text-stone-100 outline-none focus:border-gold-500/50 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-amber-400 mb-1 flex items-center justify-between">
+                    <span>Stock Mínimo *</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="Ej. 3"
+                    value={newStockMinimo}
+                    onChange={(e) => setNewStockMinimo(Number(e.target.value) || 0)}
+                    className="w-full rounded-xl border border-amber-900/40 bg-zinc-900/60 p-2.5 text-sm text-amber-200 outline-none focus:border-amber-500 font-mono"
                   />
                 </div>
               </div>

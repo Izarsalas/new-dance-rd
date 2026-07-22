@@ -6,59 +6,68 @@ interface NewDanceLogoProps {
 }
 
 export default function NewDanceLogo({ className = '', lightTheme = false }: NewDanceLogoProps) {
-  const textColor = lightTheme ? '#3f3f46' : '#a1a1aa'; // Academia de Baile text
-  const strokeColor = lightTheme ? '#27272a' : '#ffffff'; // DANCE outline
+  const strokeColor = lightTheme ? '#27272a' : '#ffffff'; // Outline stroke color
   const silhouetteMan = lightTheme ? '#27272a' : '#ffffff';
   
   return (
     <svg 
-      viewBox="0 0 500 280" 
-      className={`w-full h-full select-none pointer-events-none ${className}`}
+      viewBox="12 18 430 172" 
+      className={`select-none pointer-events-none ${className}`}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* "ACADEMIA DE BAILE" */}
+      <defs>
+        <linearGradient id="goldStarGradientND" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FEF08A" />
+          <stop offset="45%" stopColor="#EAB308" />
+          <stop offset="100%" stopColor="#CA8A04" />
+        </linearGradient>
+      </defs>
+
+      {/* "ACADEMIA DE BAILE" - Outline tall font */}
       <text 
-        x="250" 
-        y="70" 
+        x="230" 
+        y="45" 
         textAnchor="middle" 
-        fill={textColor} 
-        fontFamily="'Inter', 'Space Grotesk', sans-serif" 
-        fontWeight="300" 
-        fontSize="20" 
-        letterSpacing="8"
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="1.5"
+        fontFamily="'Space Grotesk', 'Inter', sans-serif" 
+        fontWeight="400" 
+        fontSize="24" 
+        letterSpacing="11"
       >
         ACADEMIA DE BAILE
       </text>
       
-      {/* "NEW" and Stars */}
-      <g transform="translate(10, 0)">
+      {/* "NEW" and 5 Stars */}
+      <g>
         {/* "NEW" in Bold Orange */}
         <text 
-          x="65" 
-          y="145" 
+          x="48" 
+          y="112" 
           fill="#F97316" 
           fontFamily="'Space Grotesk', sans-serif" 
           fontWeight="900" 
-          fontSize="72" 
-          letterSpacing="-2"
+          fontSize="68" 
+          letterSpacing="-1"
         >
           NEW
         </text>
         
-        {/* Stars (5 Gold Stars) */}
-        <g transform="translate(250, 115)">
-          <polygon points="0,-12 3.5,-3 12.5,-3 5.5,3 8,12 0,6 -8,12 -5.5,3 -12.5,-3 -3.5,-3" fill="#EAB308" />
-          <polygon points="35,-12 38.5,-3 47.5,-3 40.5,3 43,12 35,6 27,12 29.5,3 22.5,-3 31.5,-3" fill="#EAB308" />
-          <polygon points="70,-12 73.5,-3 82.5,-3 75.5,3 78,12 70,6 62,12 64.5,3 57.5,-3 66.5,-3" fill="#EAB308" />
-          <polygon points="105,-12 108.5,-3 117.5,-3 110.5,3 113,12 105,6 97,12 99.5,3 92.5,-3 101.5,-3" fill="#EAB308" />
-          <polygon points="140,-12 143.5,-3 152.5,-3 145.5,3 148,12 140,6 132,12 134.5,3 127.5,-3 136.5,-3" fill="#EAB308" />
+        {/* Stars (5 Gold 3D Stars) */}
+        <g transform="translate(230, 92)">
+          <polygon points="0,-12 3.5,-3 12.5,-3 5.5,3 8,12 0,6 -8,12 -5.5,3 -12.5,-3 -3.5,-3" fill="url(#goldStarGradientND)" stroke="#A16207" strokeWidth="0.5" />
+          <polygon points="34,-12 37.5,-3 46.5,-3 39.5,3 42,12 34,6 26,12 28.5,3 21.5,-3 30.5,-3" fill="url(#goldStarGradientND)" stroke="#A16207" strokeWidth="0.5" />
+          <polygon points="68,-12 71.5,-3 80.5,-3 73.5,3 76,12 68,6 60,12 62.5,3 55.5,-3 64.5,-3" fill="url(#goldStarGradientND)" stroke="#A16207" strokeWidth="0.5" />
+          <polygon points="102,-12 105.5,-3 114.5,-3 107.5,3 110,12 102,6 94,12 96.5,3 89.5,-3 98.5,-3" fill="url(#goldStarGradientND)" stroke="#A16207" strokeWidth="0.5" />
+          <polygon points="136,-12 139.5,-3 148.5,-3 141.5,3 144,12 136,6 128,12 130.5,3 123.5,-3 132.5,-3" fill="url(#goldStarGradientND)" stroke="#A16207" strokeWidth="0.5" />
         </g>
       </g>
       
       {/* "DANCE" in outline font & "RD" in solid orange */}
-      <g transform="translate(15, 0)">
+      <g>
         {/* Custom drawn outline D */}
-        <g transform="translate(60, 160)">
+        <g transform="translate(45, 126)">
           {/* Outline shape of D */}
           <path 
             d="M5,10 L30,10 C50,10 60,20 60,35 C60,50 50,60 30,60 L5,60 Z" 
@@ -69,7 +78,7 @@ export default function NewDanceLogo({ className = '', lightTheme = false }: New
           />
           
           {/* Dancing couple silhouette inside D */}
-          <g transform="translate(15, 18) scale(0.7)" opacity="0.9">
+          <g transform="translate(15, 18) scale(0.7)" opacity="0.95">
             {/* Salsa couple */}
             {/* Man */}
             <circle cx="16" cy="11" r="3.5" fill={silhouetteMan} />
@@ -84,27 +93,27 @@ export default function NewDanceLogo({ className = '', lightTheme = false }: New
         
         {/* "ANCE" Outline Letters */}
         <text 
-          x="135" 
-          y="215" 
+          x="118" 
+          y="180" 
           fill="none" 
           stroke={strokeColor} 
           strokeWidth="4" 
           fontFamily="'Space Grotesk', sans-serif" 
           fontWeight="950" 
-          fontSize="68" 
-          letterSpacing="4"
+          fontSize="64" 
+          letterSpacing="3"
         >
           ANCE
         </text>
         
         {/* "RD" in Orange bold */}
         <text 
-          x="355" 
-          y="215" 
+          x="328" 
+          y="180" 
           fill="#F97316" 
           fontFamily="'Space Grotesk', sans-serif" 
           fontWeight="900" 
-          fontSize="68"
+          fontSize="64"
         >
           RD
         </text>

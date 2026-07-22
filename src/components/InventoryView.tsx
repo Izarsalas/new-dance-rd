@@ -48,7 +48,8 @@ export default function InventoryView({ products }: InventoryViewProps) {
 
   // Calculate stats
   const totalStockItems = products.reduce((sum, p) => sum + p.stock, 0);
-  const lowStockCount = products.filter(p => p.stock <= 3).length;
+  const lowStockProducts = products.filter(p => p.stock <= (p.stockMinimo !== undefined ? p.stockMinimo : 3));
+  const lowStockCount = lowStockProducts.length;
   
   const totalValueInStock = products.reduce((sum, p) => sum + (p.precio * p.stock), 0);
   const totalCostInStock = products.reduce((sum, p) => sum + ((p.costo || 0) * p.stock), 0);
@@ -56,11 +57,12 @@ export default function InventoryView({ products }: InventoryViewProps) {
 
   // Filter list
   const filteredProducts = products.filter(p => {
+    const minStock = p.stockMinimo !== undefined ? p.stockMinimo : 3;
     const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           p.departamento.toLowerCase().includes(searchTerm.toLowerCase());
     
-    if (stockFilter === 'Bajo Stock') return matchesSearch && p.stock <= 3;
-    if (stockFilter === 'Disponible') return matchesSearch && p.stock > 3;
+    if (stockFilter === 'Bajo Stock') return matchesSearch && p.stock <= minStock;
+    if (stockFilter === 'Disponible') return matchesSearch && p.stock > minStock;
     return matchesSearch;
   });
 
@@ -87,11 +89,41 @@ export default function InventoryView({ products }: InventoryViewProps) {
             className="bg-transparent font-semibold text-white outline-none cursor-pointer"
           >
             <option value="Todos" className="bg-zinc-950 text-white">Todos los Artículos</option>
-            <option value="Bajo Stock" className="bg-zinc-950 text-white">⚠️ Stock Crítico (≤ 3)</option>
-            <option value="Disponible" className="bg-zinc-950 text-white">Suficiencia ( &gt; 3)</option>
+            <option value="Bajo Stock" className="bg-zinc-950 text-white">⚠️ Bajo Stock (≤ Mínimo)</option>
+            <option value="Disponible" className="bg-zinc-950 text-white">Suficiencia (&gt; Mínimo)</option>
           </select>
         </div>
       </div>
+
+      {/* RECORDATORIO DE REPOSICIÓN SI HAY BAJO STOCK */}
+      {lowStockCount > 0 && (
+        <div className="rounded-2xl bg-amber-950/30 border border-amber-500/40 p-4 space-y-2 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-amber-300 font-bold text-xs uppercase tracking-wide">
+              <AlertTriangle className="h-4 w-4 text-amber-400 animate-bounce" />
+              <span>Recordatorio de Reposición ({lowStockCount} {lowStockCount === 1 ? 'producto por debajo o igual al stock mínimo' : 'productos por debajo o igual al stock mínimo'}):</span>
+            </div>
+            <button
+              onClick={() => setStockFilter('Bajo Stock')}
+              className="text-[10px] uppercase font-bold text-amber-300 underline hover:text-white cursor-pointer"
+            >
+              Filtrar Bajo Stock
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {lowStockProducts.map(p => {
+              const minS = p.stockMinimo !== undefined ? p.stockMinimo : 3;
+              return (
+                <span key={p.id} className="inline-flex items-center gap-1.5 bg-zinc-900 border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-amber-200 font-mono">
+                  <span className="font-semibold text-white">{p.nombre}:</span>
+                  <span className="font-bold text-amber-400">{p.stock} pzas</span>
+                  <span className="text-zinc-500 text-[10px]">(Mín: {minS})</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* INVENTORY STATS PANELS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -117,7 +149,7 @@ export default function InventoryView({ products }: InventoryViewProps) {
             </span>
             {lowStockCount > 0 && <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />}
           </div>
-          <span className="text-[9px] text-zinc-300 block mt-1">Con existencias críticas (≤ 3)</span>
+          <span className="text-[9px] text-zinc-300 block mt-1">En o por debajo de su stock mínimo</span>
         </div>
 
         {/* COST DEPLOYMENT */}
@@ -157,7 +189,8 @@ export default function InventoryView({ products }: InventoryViewProps) {
           </div>
         ) : (
           filteredProducts.map((p) => {
-            const isCritical = p.stock <= 3;
+            const minStock = p.stockMinimo !== undefined ? p.stockMinimo : 3;
+            const isCritical = p.stock <= minStock;
             const isZero = p.stock === 0;
 
             return (
@@ -196,11 +229,11 @@ export default function InventoryView({ products }: InventoryViewProps) {
                 {/* Metrics */}
                 <div className="grid grid-cols-3 gap-2 bg-zinc-900/20 p-2.5 rounded-lg border border-zinc-900/50">
                   <div className="text-center">
-                    <span className="text-[9px] text-zinc-300 block font-semibold">Inv. Físico</span>
+                    <span className="text-[9px] text-zinc-300 block font-semibold">Inv. / Mín</span>
                     <span className={`text-[11px] font-mono font-black ${
                       isZero ? 'text-rose-400' : isCritical ? 'text-amber-500' : 'text-white'
                     }`}>
-                      {p.stock} uds
+                      {p.stock} / <span className="text-zinc-400 font-normal">{minStock}</span>
                     </span>
                   </div>
 
@@ -221,9 +254,14 @@ export default function InventoryView({ products }: InventoryViewProps) {
 
                 {/* Warning message if low stock */}
                 {isCritical && (
-                  <p className="text-[10px] text-zinc-200 font-medium leading-snug flex items-start gap-1 p-1.5 rounded bg-amber-950/10 border border-amber-900/30 font-sans">
-                    <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
-                    <span>Nivel crítico. Se sugiere reabastecer {Math.max(1, 10 - p.stock)} unidades para llegar al stock sugerido.</span>
+                  <p className="text-[10px] text-amber-200 font-medium leading-snug flex items-start gap-1 p-2 rounded-lg bg-amber-950/20 border border-amber-900/40 font-sans">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+                    <span>
+                      {isZero 
+                        ? `¡Agotado! Existencias en 0. Stock mínimo requerido: ${minStock} pzas.` 
+                        : `Stock bajo el mínimo (${p.stock} pzas disponibles de ${minStock} pzas mínimas). Se sugiere reabastecer.`
+                      }
+                    </span>
                   </p>
                 )}
               </div>
